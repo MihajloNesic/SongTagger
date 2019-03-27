@@ -1,0 +1,17 @@
+.root {
+    -fx-base: #ececec;
+    -fx-background: derive(-fx-base,26.4%);
+    -fx-color: -fx-base;
+    -fx-text-base-color: ladder(
+            -fx-color,
+            -fx-light-text-color 45%,
+            -fx-dark-text-color  46%,
+            -fx-dark-text-color  59%,
+            -fx-mid-text-color   60%
+    );
+    -fx-background-color: -fx-background;
+}
+
+.root {
+    -fx-base: #ececec;
+}
