@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.collections.*?>
 <?import javafx.scene.image.*?>
 <?import javafx.scene.text.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import java.lang.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.collections.FXCollections?>
 
-
-<VBox fx:id="root" alignment="CENTER_LEFT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="530.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+<VBox fx:id="root" alignment="CENTER_LEFT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="562.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <HBox fx:id="hbs1" alignment="CENTER" prefHeight="65.0" prefWidth="380.0" spacing="5.0">
          <children>
@@ -30,7 +31,7 @@
             <Insets bottom="5.0" top="5.0" />
          </VBox.margin>
       </HBox>
-      <VBox fx:id="vbs2" alignment="CENTER" prefHeight="200.0" prefWidth="100.0" spacing="5.0">
+      <VBox fx:id="vbs1" alignment="CENTER" prefHeight="200.0" prefWidth="100.0" spacing="5.0">
          <padding>
             <Insets bottom="5.0" top="5.0" />
          </padding>
@@ -41,12 +42,12 @@
                   <Insets bottom="5.0" top="5.0" />
                </padding>
                <children>
-                  <Button fx:id="changeArtwork" minWidth="65.0" mnemonicParsing="false" prefHeight="22.0" text="Change">
+                  <Button fx:id="changeArtwork" disable="true" minWidth="65.0" mnemonicParsing="false" prefHeight="22.0" text="Change">
                      <font>
                         <Font size="13.0" />
                      </font>
                   </Button>
-                  <Button minWidth="75.0" mnemonicParsing="false" prefHeight="22.0" text="Download image">
+                  <Button fx:id="downloadArtwork" disable="true" minWidth="75.0" mnemonicParsing="false" prefHeight="22.0" text="Download image">
                      <font>
                         <Font size="13.0" />
                      </font>
@@ -55,42 +56,105 @@
             </HBox>
          </children>
       </VBox>
-      <Label fx:id="lblAlbum" text="Album Name">
-         <font>
-            <Font size="13.0" />
-         </font>
-      </Label>
-      <TextField fx:id="albumField" prefHeight="22.0" prefWidth="350.0" promptText="Album Name">
-         <font>
-            <Font size="13.0" />
-         </font>
-      </TextField>
-      <Label fx:id="lblTitle" layoutX="20.0" layoutY="398.0" text="Song Title">
-         <font>
-            <Font size="13.0" />
-         </font>
-      </Label>
-      <TextField fx:id="titleField" prefHeight="22.0" prefWidth="350.0" promptText="Song Title">
-         <font>
-            <Font size="13.0" />
-         </font>
-      </TextField>
-      <Label fx:id="lblArtist" layoutX="20.0" layoutY="407.0" text="Artist">
-         <font>
-            <Font size="13.0" />
-         </font>
-      </Label>
-      <TextField prefHeight="22.0" prefWidth="350.0" promptText="Artist">
-         <font>
-            <Font size="13.0" />
-         </font>
-      </TextField>
-      <VBox fx:id="vbs3" alignment="CENTER" prefHeight="65.0" prefWidth="380.0" spacing="5.0">
+      <HBox fx:id="hbs3" alignment="CENTER" prefHeight="100.0" prefWidth="200.0" spacing="10.0">
+         <padding>
+            <Insets bottom="5.0" top="5.0" />
+         </padding>
+         <children>
+            <VBox fx:id="vbs2" alignment="CENTER_LEFT" prefHeight="200.0" prefWidth="200.0" spacing="5.0">
+               <children>
+                  <Label fx:id="lblAlbum" text="Album Name">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="albumField" disable="true" prefHeight="22.0" prefWidth="170.0" promptText="Album Name">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </TextField>
+                  <Label fx:id="lblTitle" text="Song Title">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="titleField" disable="true" prefHeight="22.0" prefWidth="170.0" promptText="Song Title">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </TextField>
+                  <Label fx:id="lblArtist" text="Artist">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="artistField" disable="true" prefHeight="22.0" prefWidth="170.0" promptText="Artist">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </TextField>
+               </children>
+               <padding>
+                  <Insets bottom="5.0" top="5.0" />
+               </padding>
+            </VBox>
+            <VBox fx:id="vbs3" alignment="CENTER_LEFT" prefHeight="200.0" prefWidth="200.0" spacing="5.0">
+               <children>
+                  <Label fx:id="lblTrack" text="Track Number">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="trackNumberField" disable="true" prefHeight="22.0" prefWidth="170.0" promptText="Track Number">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </TextField>
+                  <Label fx:id="lblYear" text="Year">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </Label>
+                  <TextField fx:id="yearField" disable="true" prefHeight="22.0" prefWidth="170.0" promptText="Year">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </TextField>
+                  <Label fx:id="lblGenre" text="Genre">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </Label>
+                  <ComboBox fx:id="comboGenres" disable="true" prefHeight="28.0" prefWidth="190.0" promptText="Genre" visibleRowCount="5">
+                     <items>
+                        <FXCollections fx:factory="observableArrayList">
+                           <String fx:value="Blues" />
+                           <String fx:value="Classic Rock" />
+                           <String fx:value="Country" />
+                           <String fx:value="Dance" />
+                           <String fx:value="Disco" />
+                           <String fx:value="Funk" />
+                           <String fx:value="Grunge" />
+                           <String fx:value="Hip-Hop" />
+                           <String fx:value="Jazz" />
+                           <String fx:value="Metal" />
+                           <String fx:value="New Age" />
+                        </FXCollections>
+                     </items>
+                  </ComboBox>
+               </children>
+               <padding>
+                  <Insets bottom="5.0" top="5.0" />
+               </padding>
+            </VBox>
+         </children>
+      </HBox>
+      <VBox fx:id="vbs4" alignment="CENTER" prefHeight="65.0" prefWidth="380.0" spacing="5.0">
          <padding>
             <Insets bottom="10.0" top="20.0" />
          </padding>
          <children>
-            <Button fx:id="save" mnemonicParsing="false" prefHeight="22.0" prefWidth="400.0" text="Save">
+            <Button fx:id="save" disable="true" mnemonicParsing="false" defaultButton="true" prefHeight="22.0" prefWidth="400.0" text="Save">
                <font>
                   <Font size="13.0" />
                </font>

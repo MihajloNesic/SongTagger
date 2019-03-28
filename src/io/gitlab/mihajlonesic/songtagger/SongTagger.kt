@@ -25,7 +25,8 @@ class SongTagger: Application() {
         fxmlLoader.setController(controller)
         var root = fxmlLoader.load<Any>() as Parent
 
-        // val applicationIcon = Image(javaClass.getResourceAsStream("kotlin.png"))
+        // TODO: Add app icon
+        val applicationIcon = Image(javaClass.getResourceAsStream("/icon.png"))
 
         controller.init()
 
@@ -33,7 +34,7 @@ class SongTagger: Application() {
             title = "SongTagger alpha 2.0"
             scene = Scene(root)
             isResizable = false
-            // icons.add(applicationIcon)
+            icons.add(applicationIcon)
             scene.stylesheets.add("style.css")
             show()
         }

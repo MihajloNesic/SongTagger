@@ -13,5 +13,6 @@
 }
 
 .root {
+    /* Change this HEX for GUI color schemes */
     -fx-base: #ececec;
 }
