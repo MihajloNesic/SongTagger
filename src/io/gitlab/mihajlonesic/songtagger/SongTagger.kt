@@ -21,9 +21,9 @@ class SongTagger: Application() {
     }
 
     private fun startApp(stage: Stage) {
-        var fxmlLoader = FXMLLoader(javaClass.getResource("/SongTagger.fxml"))
+        val fxmlLoader = FXMLLoader(javaClass.getResource("/SongTagger.fxml"))
         fxmlLoader.setController(controller)
-        var root = fxmlLoader.load<Any>() as Parent
+        val root = fxmlLoader.load<Any>() as Parent
 
         // TODO: Add app icon
         val applicationIcon = Image(javaClass.getResourceAsStream("/icon.png"))

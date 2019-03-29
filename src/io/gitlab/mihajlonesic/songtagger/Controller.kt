@@ -184,9 +184,9 @@ class Controller(private val stage: Stage) {
      * Handles song selection
      */
     private fun handleSelectSong() {
-        var file = songFileChooser.showOpenDialog(stage)
+        val file = songFileChooser.showOpenDialog(stage)
         if(file != null) {
-            songFile = file;
+            songFile = file
             println("Selected song path: ${songFile.absolutePath}")
             songPath.text = songFile.absolutePath
             readTags()
@@ -199,7 +199,7 @@ class Controller(private val stage: Stage) {
      * Handles artwork changing
      */
     private fun handleChangeArtwork() {
-        var file = songArtworkChooser.showOpenDialog(stage)
+        val file = songArtworkChooser.showOpenDialog(stage)
         if(file != null) {
             songArtFile = file
             println("Artwork image path: ${songArtFile.absolutePath}")
@@ -216,9 +216,9 @@ class Controller(private val stage: Stage) {
      * TODO: Download artwork from file, not ImageView
      */
     private fun handleArtworkDownload() {
-        var image = songArtwork.image
+        val image = songArtwork.image
         if(image != null) {
-            var file = songSaveArtworkChooser.showSaveDialog(stage)
+            val file = songSaveArtworkChooser.showSaveDialog(stage)
             if (file != null) {
                 Util.saveImageToFile(image, file)
                 Util.alertConfirm("Artwork saved to ${file.absolutePath}")
@@ -231,7 +231,8 @@ class Controller(private val stage: Stage) {
      */
     private fun handleColorChanged() {
         val color = Util.toHEX(colorPicker.value)
-        root.style = "-fx-base: $color; -fx-default-button: $color;"
+        val colorDefB = Util.toHEX(colorPicker.value.darker().darker())
+        root.style = "-fx-base: $color; -fx-default-button: $colorDefB;"
     }
 
     /**
