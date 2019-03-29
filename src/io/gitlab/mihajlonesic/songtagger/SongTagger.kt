@@ -31,7 +31,7 @@ class SongTagger: Application() {
         controller.init()
 
         stage.apply {
-            title = "SongTagger alpha 2.0"
+            title = "SongTagger alpha 2.1"
             scene = Scene(root)
             isResizable = false
             icons.add(applicationIcon)

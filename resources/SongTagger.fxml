@@ -1,16 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.collections.*?>
+<?import java.lang.*?>
 <?import javafx.scene.image.*?>
 <?import javafx.scene.text.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
-<?import java.lang.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.collections.FXCollections?>
 
-<VBox fx:id="root" alignment="CENTER_LEFT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="562.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+<VBox fx:id="root" alignment="CENTER_LEFT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="589.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
    <children>
+      <HBox fx:id="hbs4" alignment="CENTER" prefHeight="100.0" prefWidth="200.0" spacing="5.0">
+         <children>
+            <Label fx:id="lblColor" minWidth="-Infinity" prefWidth="85.0" text="Color Scheme">
+               <font>
+                  <Font size="13.0" />
+               </font>
+            </Label>
+            <ColorPicker fx:id="colorPicker" prefHeight="28.0" prefWidth="400.0" promptText="Color scheme" />
+         </children>
+         <padding>
+            <Insets bottom="5.0" top="5.0" />
+         </padding>
+      </HBox>
       <HBox fx:id="hbs1" alignment="CENTER" prefHeight="65.0" prefWidth="380.0" spacing="5.0">
          <children>
             <TextField fx:id="songPath" editable="false" prefHeight="22.0" prefWidth="350.0" promptText="Song path">
@@ -125,23 +136,7 @@
                         <Font size="13.0" />
                      </font>
                   </Label>
-                  <ComboBox fx:id="comboGenres" disable="true" prefHeight="28.0" prefWidth="190.0" promptText="Genre" visibleRowCount="5">
-                     <items>
-                        <FXCollections fx:factory="observableArrayList">
-                           <String fx:value="Blues" />
-                           <String fx:value="Classic Rock" />
-                           <String fx:value="Country" />
-                           <String fx:value="Dance" />
-                           <String fx:value="Disco" />
-                           <String fx:value="Funk" />
-                           <String fx:value="Grunge" />
-                           <String fx:value="Hip-Hop" />
-                           <String fx:value="Jazz" />
-                           <String fx:value="Metal" />
-                           <String fx:value="New Age" />
-                        </FXCollections>
-                     </items>
-                  </ComboBox>
+                  <ComboBox fx:id="comboGenres" disable="true" prefHeight="28.0" prefWidth="190.0" promptText="Genre" visibleRowCount="5" />
                </children>
                <padding>
                   <Insets bottom="5.0" top="5.0" />
@@ -154,7 +149,7 @@
             <Insets bottom="10.0" top="20.0" />
          </padding>
          <children>
-            <Button fx:id="save" disable="true" mnemonicParsing="false" defaultButton="true" prefHeight="22.0" prefWidth="400.0" text="Save">
+            <Button fx:id="save" defaultButton="true" disable="true" mnemonicParsing="false" prefHeight="22.0" prefWidth="400.0" text="Save">
                <font>
                   <Font size="13.0" />
                </font>

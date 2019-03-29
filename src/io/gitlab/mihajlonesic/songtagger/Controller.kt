@@ -9,14 +9,12 @@ import javafx.stage.FileChooser
 import javafx.stage.Stage
 import java.io.File
 import javafx.application.Platform
+import javafx.collections.FXCollections
 import javafx.stage.DirectoryChooser
-import java.io.IOException
-import javax.imageio.ImageIO
-import javafx.embed.swing.SwingFXUtils
+import javafx.scene.control.ColorPicker
 import javafx.scene.control.ComboBox
-import java.awt.image.BufferedImage
-
-
+import javafx.scene.layout.VBox
+import javafx.scene.paint.Color
 
 class Controller(private val stage: Stage) {
 
@@ -37,6 +35,10 @@ class Controller(private val stage: Stage) {
 
     @FXML lateinit var save: Button
 
+    @FXML lateinit var colorPicker: ColorPicker
+
+    @FXML lateinit var root: VBox
+
     // Other controls
     private val audioFilterMp3 = FileChooser.ExtensionFilter("MP3 (*.mp3)", "*.mp3")
     private val imageFilters = FileChooser.ExtensionFilter("Image Files", "*.jpg", "*.jpeg", "*.png", "*.bmp", "*.tiff", "*.gif")
@@ -53,10 +55,97 @@ class Controller(private val stage: Stage) {
     private lateinit var songFile: File
     private lateinit var songArtFile: File
 
-    // TODO: Add all ID3v1 genres
     // https://en.wikipedia.org/wiki/List_of_ID3v1_Genres
+    private val genres = FXCollections.observableArrayList(
+        "None",
+        "Blues",
+        "Classic Rock",
+        "Country",
+        "Dance",
+        "Disco",
+        "Funk",
+        "Grunge",
+        "Hip-Hop",
+        "Jazz",
+        "Metal",
+        "New Age",
+        "Oldies",
+        "Other",
+        "Pop",
+        "Rhythm and Blues",
+        "Rap",
+        "Reggae",
+        "Rock",
+        "Techno",
+        "Industrial",
+        "Alternative",
+        "Ska",
+        "Death Metal",
+        "Pranks",
+        "Soundtrack",
+        "Euro-Techno",
+        "Ambient",
+        "Trip-Hop",
+        "Vocal",
+        "Jazz & Funk",
+        "Fusion",
+        "Trance",
+        "Classical",
+        "Instrumental",
+        "Acid",
+        "House",
+        "Game",
+        "Sound clip",
+        "Gospel",
+        "Noise",
+        "Alternative Rock",
+        "Bass",
+        "Soul",
+        "Punk",
+        "Space",
+        "Meditative",
+        "Instrumental Pop",
+        "Instrumental Rock",
+        "Ethnic",
+        "Gothic",
+        "Darkwave",
+        "Techno-Industrial",
+        "Electronic",
+        "Pop-Folk",
+        "Eurodance",
+        "Dream",
+        "Southern Rock",
+        "Comedy",
+        "Cult",
+        "Gangsta",
+        "Top 40",
+        "Christian Rap",
+        "Pop/Funk",
+        "Jungle music",
+        "Native US",
+        "Cabaret",
+        "New Wave",
+        "Psychedelic",
+        "Rave",
+        "Showtunes",
+        "Trailer",
+        "Lo-Fi",
+        "Tribal",
+        "Acid Punk",
+        "Acid Jazz",
+        "Polka",
+        "Retro",
+        "Musical",
+        "Rock ’n’ Roll",
+        "Hard Rock"
+    )
+
     private val genreID
-        get() = (comboGenres.selectionModel.selectedIndex)
+        get() = when(comboGenres.selectionModel.selectedIndex) {
+            -1 -> -1
+            0 -> -1
+            else -> comboGenres.selectionModel.selectedIndex - 1
+        }
 
     /**
      * Initialize form actions and other controls
@@ -65,6 +154,9 @@ class Controller(private val stage: Stage) {
         selectSong.setOnAction { handleSelectSong() }
         changeArtwork.setOnAction { handleChangeArtwork() }
         downloadArtwork.setOnAction { handleArtworkDownload() }
+        save.setOnAction { handleSave() }
+
+        colorPicker.setOnAction { handleColorChanged() }
 
         songFileChooser.title = "Select Song"
         songFileChooser.extensionFilters.add(audioFilterMp3)
@@ -77,9 +169,15 @@ class Controller(private val stage: Stage) {
 
         songSaveChooser.title = "Save to"
 
-        save.setOnAction { handleSave() }
+        colorPicker.value = Color.valueOf("#ececec")
+
+        comboGenres.items.addAll(genres)
 
         Platform.runLater{ selectSong.requestFocus() }
+
+        // TODO: Remove
+        controlButtons(false)
+        controlFields(false)
     }
 
     /**
@@ -91,9 +189,9 @@ class Controller(private val stage: Stage) {
             songFile = file;
             println("Selected song path: ${songFile.absolutePath}")
             songPath.text = songFile.absolutePath
-            this.readTags()
-            this.controlButtons(false)
-            this.controlFields(false)
+            readTags()
+            controlButtons(false)
+            controlFields(false)
         }
     }
 
@@ -122,10 +220,18 @@ class Controller(private val stage: Stage) {
         if(image != null) {
             var file = songSaveArtworkChooser.showSaveDialog(stage)
             if (file != null) {
-                saveImageToFile(image, file)
+                Util.saveImageToFile(image, file)
                 Util.alertConfirm("Artwork saved to ${file.absolutePath}")
             }
         }
+    }
+
+    /**
+     * Handles GUI color changing
+     */
+    private fun handleColorChanged() {
+        val color = Util.toHEX(colorPicker.value)
+        root.style = "-fx-base: $color; -fx-default-button: $color;"
     }
 
     /**
@@ -187,21 +293,6 @@ class Controller(private val stage: Stage) {
      */
     private fun setSongImageView(file: File) {
         setSongImageView(file.toURI().toString())
-    }
-
-    /**
-     * Extracts an image to a file
-     *
-     * @param image Image to be extracted/saved
-     * @param outputFile Image file
-     */
-    private fun saveImageToFile(image: Image, outputFile: File) {
-        val bImage = SwingFXUtils.fromFXImage(image, null)
-        try {
-            ImageIO.write(bImage, outputFile.extension, outputFile)
-        } catch (e: IOException) {
-            throw IOException(e)
-        }
     }
 
 }

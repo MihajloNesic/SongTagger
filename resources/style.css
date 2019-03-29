@@ -15,4 +15,5 @@
 .root {
     /* Change this HEX for GUI color schemes */
     -fx-base: #ececec;
+    -fx-default-button: #ABD8ED;
 }
