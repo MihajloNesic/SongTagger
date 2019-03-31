@@ -10,9 +10,11 @@ import javafx.stage.Stage
 import java.io.File
 import javafx.application.Platform
 import javafx.collections.FXCollections
+import javafx.event.EventHandler
 import javafx.stage.DirectoryChooser
 import javafx.scene.control.ColorPicker
 import javafx.scene.control.ComboBox
+import javafx.scene.input.KeyEvent
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 
@@ -140,6 +142,11 @@ class Controller(private val stage: Stage) {
         "Hard Rock"
     )
 
+    /**
+     * Gets genre ID based on selected genre
+     * ID is based on ID3v1 genre
+     * https://en.wikipedia.org/wiki/List_of_ID3v1_Genres
+     */
     private val genreID
         get() = when(comboGenres.selectionModel.selectedIndex) {
             -1 -> -1
@@ -148,15 +155,37 @@ class Controller(private val stage: Stage) {
         }
 
     /**
+     * Handles input for number-only input fields
+     */
+    private var numberInputHandler: EventHandler<KeyEvent> = object : EventHandler<KeyEvent> {
+        private var willConsume = false
+
+        override fun handle(event: KeyEvent) {
+            if (willConsume)
+                event.consume()
+
+            if (!event.code.isDigitKey) {
+                if (event.eventType == KeyEvent.KEY_PRESSED)
+                    willConsume = true
+                else if (event.eventType == KeyEvent.KEY_RELEASED)
+                    willConsume = false
+            }
+        }
+    }
+
+    /**
      * Initialize form actions and other controls
      */
     internal fun init() {
         selectSong.setOnAction { handleSelectSong() }
         changeArtwork.setOnAction { handleChangeArtwork() }
         downloadArtwork.setOnAction { handleArtworkDownload() }
+        colorPicker.setOnAction { handleColorChanged() }
+
         save.setOnAction { handleSave() }
 
-        colorPicker.setOnAction { handleColorChanged() }
+        trackNumberField.addEventFilter(KeyEvent.ANY, numberInputHandler)
+        yearField.addEventFilter(KeyEvent.ANY, numberInputHandler)
 
         songFileChooser.title = "Select Song"
         songFileChooser.extensionFilters.add(audioFilterMp3)
@@ -231,8 +260,8 @@ class Controller(private val stage: Stage) {
      */
     private fun handleColorChanged() {
         val color = Util.toHEX(colorPicker.value)
-        val colorDefB = Util.toHEX(colorPicker.value.darker().darker())
-        root.style = "-fx-base: $color; -fx-default-button: $colorDefB;"
+        val colorDefBtn = Util.toHEX(colorPicker.value.darker().darker())
+        root.style = "-fx-base: $color; -fx-default-button: $colorDefBtn;"
     }
 
     /**
