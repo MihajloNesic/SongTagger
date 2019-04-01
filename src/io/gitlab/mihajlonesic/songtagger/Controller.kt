@@ -155,6 +155,15 @@ class Controller(private val stage: Stage) {
         }
 
     /**
+     * Gets genre name based on ID3v1 genre id
+     */
+    private val genreName
+        get() = when(genreID) {
+            -1 -> ""
+            else -> comboGenres.items[genreID+1]
+        }
+
+    /**
      * Handles input for number-only input fields
      */
     private var numberInputHandler: EventHandler<KeyEvent> = object : EventHandler<KeyEvent> {
@@ -265,17 +274,17 @@ class Controller(private val stage: Stage) {
     }
 
     /**
-     * Handles song saving
-     */
-    private fun handleSave() {
-        // TODO: Save functionality
-    }
-
-    /**
      * Handles reading song tags
      */
     private fun readTags() {
         // TODO: Reading song tags functionality
+    }
+
+    /**
+     * Handles song saving
+     */
+    private fun handleSave() {
+        // TODO: Save functionality
     }
 
     /**
@@ -323,6 +332,17 @@ class Controller(private val stage: Stage) {
      */
     private fun setSongImageView(file: File) {
         setSongImageView(file.toURI().toString())
+    }
+
+    /**
+     * Sets fields based on song information
+     */
+    private fun setFieldsFromSong(song: Song) {
+        albumField.text = song.album
+        titleField.text = song.title
+        artistField.text = song.artist
+        trackNumberField.text = song.trackNumber
+        yearField.text = song.year
     }
 
 }
