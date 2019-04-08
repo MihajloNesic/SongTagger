@@ -1,8 +1,6 @@
 package io.gitlab.mihajlonesic.songtagger
 
 import javafx.fxml.FXML
-import javafx.scene.control.Button
-import javafx.scene.control.TextField
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.stage.FileChooser
@@ -10,13 +8,18 @@ import javafx.stage.Stage
 import java.io.File
 import javafx.application.Platform
 import javafx.collections.FXCollections
+import javafx.embed.swing.SwingFXUtils
 import javafx.event.EventHandler
+import javafx.scene.control.*
 import javafx.stage.DirectoryChooser
-import javafx.scene.control.ColorPicker
-import javafx.scene.control.ComboBox
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
+import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.tag.FieldKey
+import org.jaudiotagger.tag.images.Artwork
+import org.jaudiotagger.tag.images.ArtworkFactory
+import java.awt.image.BufferedImage
 
 class Controller(private val stage: Stage) {
 
@@ -42,6 +45,7 @@ class Controller(private val stage: Stage) {
     @FXML lateinit var root: VBox
 
     // Other controls
+    private val audioFilters = FileChooser.ExtensionFilter("Audio Files", "*.mp3", "*.m4a")
     private val audioFilterMp3 = FileChooser.ExtensionFilter("MP3 (*.mp3)", "*.mp3")
     private val imageFilters = FileChooser.ExtensionFilter("Image Files", "*.jpg", "*.jpeg", "*.png", "*.bmp", "*.tiff", "*.gif")
     private val imageFilterPNG = FileChooser.ExtensionFilter("PNG (*.png)", "*.png")
@@ -56,6 +60,7 @@ class Controller(private val stage: Stage) {
     private lateinit var song: Song
     private lateinit var songFile: File
     private lateinit var songArtFile: File
+    private lateinit var songArtArtwork: Artwork
 
     // https://en.wikipedia.org/wiki/List_of_ID3v1_Genres
     private val genres = FXCollections.observableArrayList(
@@ -186,36 +191,33 @@ class Controller(private val stage: Stage) {
      * Initialize form actions and other controls
      */
     internal fun init() {
+        song = Song()
+
         selectSong.setOnAction { handleSelectSong() }
         changeArtwork.setOnAction { handleChangeArtwork() }
         downloadArtwork.setOnAction { handleArtworkDownload() }
-        colorPicker.setOnAction { handleColorChanged() }
-
         save.setOnAction { handleSave() }
 
         trackNumberField.addEventFilter(KeyEvent.ANY, numberInputHandler)
         yearField.addEventFilter(KeyEvent.ANY, numberInputHandler)
 
         songFileChooser.title = "Select Song"
-        songFileChooser.extensionFilters.add(audioFilterMp3)
+        songFileChooser.extensionFilters.addAll(audioFilters, audioFilterMp3)
 
         songArtworkChooser.title = "Select an Artwork"
         songArtworkChooser.extensionFilters.addAll(imageFilters, imageFilterPNG, imageFilterJPEG)
 
         songSaveArtworkChooser.title = "Save an Artwork"
-        songSaveArtworkChooser.extensionFilters.addAll(imageFilterPNG, imageFilterJPEG)
+        songSaveArtworkChooser.extensionFilters.addAll(imageFilterPNG)
 
         songSaveChooser.title = "Save to"
 
         colorPicker.value = Color.valueOf("#ececec")
+        colorPicker.setOnAction { handleColorChanged() }
 
         comboGenres.items.addAll(genres)
 
         Platform.runLater{ selectSong.requestFocus() }
-
-        // TODO: Remove
-        controlButtons(false)
-        controlFields(false)
     }
 
     /**
@@ -225,7 +227,7 @@ class Controller(private val stage: Stage) {
         val file = songFileChooser.showOpenDialog(stage)
         if(file != null) {
             songFile = file
-            println("Selected song path: ${songFile.absolutePath}")
+            println("\nSelected song path: ${songFile.absolutePath}")
             songPath.text = songFile.absolutePath
             readTags()
             controlButtons(false)
@@ -277,19 +279,77 @@ class Controller(private val stage: Stage) {
      * Handles reading song tags
      */
     private fun readTags() {
-        // TODO: Reading song tags functionality
+        val audioFile = AudioFileIO.read(songFile)
+        val tag = audioFile.tagOrCreateAndSetDefault
+
+        song.album = tag.getFirst(FieldKey.ALBUM)
+        song.title = tag.getFirst(FieldKey.TITLE)
+        song.artist = tag.getFirst(FieldKey.ARTIST)
+        song.trackNumber = tag.getFirst(FieldKey.TRACK)
+        song.year = tag.getFirst(FieldKey.YEAR)
+
+        var genre = Util.firstToSlash(tag.getFirst(FieldKey.GENRE))
+
+        if(genre.isNotEmpty()) {
+            song.genre = genre
+            println("Song genre: $genre")
+        }
+
+        if(!tag.artworkList.isNullOrEmpty()) {
+            val artwork = tag.firstArtwork
+            val artworkImage = SwingFXUtils.toFXImage(artwork.image as BufferedImage?, null)
+            songArtwork.image = artworkImage
+            songArtArtwork = artwork
+        }
+
+        setFieldsFromSong(song)
+        println("Song data: $song")
+
+        // Little easter egg :)
+        val comment = tag.getFirst(FieldKey.COMMENT)
+        if(comment == "SongTagger by MihajloNesic") {
+            println("Song was tagged with SongTagger! :)")
+            save.text = "Save :)"
+        }
     }
 
     /**
      * Handles song saving
      */
     private fun handleSave() {
-        // TODO: Save functionality
+        println("Saving...")
+        if(songFile.extension == "mp3") {
+            // TODO: Implement mp3 files
+            Util.alertError("MP3 files not supported yet :(")
+        }
+        else if(songFile.extension == "m4a") {
+            var audioFile = AudioFileIO.read(songFile)
+            var tag = audioFile.tag
+
+            setSongFromFields()
+            println("New song data: $song")
+
+            tag.setField(FieldKey.ALBUM, song.album)
+            tag.setField(FieldKey.TITLE, song.title)
+            tag.setField(FieldKey.ARTIST, song.artist)
+            tag.setField(FieldKey.TRACK, song.trackNumber)
+            tag.setField(FieldKey.YEAR, song.year)
+            tag.setField(FieldKey.GENRE, song.genre)
+
+            tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
+
+            tag.setField(songArtArtwork)
+
+            audioFile.commit()
+
+            Util.alertConfirm("Song successfully saved!")
+            println("Saved!")
+        }
+        else Util.alertError("File extension not supported yet :(")
     }
 
     /**
      * Enables or disables all buttons except song selection
-     * TODO: Refactor method
      *
      * @param disable Are controls disabled
      */
@@ -301,7 +361,6 @@ class Controller(private val stage: Stage) {
 
     /**
      * Enables or disables input fields
-     * TODO: Refactor method
      *
      * @param disable Are fields disabled
      */
@@ -317,21 +376,12 @@ class Controller(private val stage: Stage) {
     /**
      * Sets an image to `songArtwork` image view
      *
-     * @param path The path of an image file
-     */
-    private fun setSongImageView(path: String) {
-        val image = Image(path, 800.0, 800.0, false, true)
-        songArtwork.image = image
-    }
-
-    /**
-     * Sets an image to `songArtwork` image view
-     *
      * @param file an image file
-     * @see setSongImageView
      */
     private fun setSongImageView(file: File) {
-        setSongImageView(file.toURI().toString())
+        val image = Image(file.toURI().toString(), 800.0, 800.0, false, true)
+        songArtwork.image = image
+        songArtArtwork = ArtworkFactory.createArtworkFromFile(file)
     }
 
     /**
@@ -343,6 +393,21 @@ class Controller(private val stage: Stage) {
         artistField.text = song.artist
         trackNumberField.text = song.trackNumber
         yearField.text = song.year
+
+        if(song.genre.isNotEmpty()) {
+            comboGenres.selectionModel.select(song.genre)
+        } else comboGenres.selectionModel.select(-1)
     }
 
+    /**
+     * Sets song information based on fields
+     */
+    private fun setSongFromFields() {
+        song.album = albumField.text
+        song.title = titleField.text
+        song.artist = artistField.text
+        song.trackNumber = trackNumberField.text
+        song.year = yearField.text
+        song.genre = genreName
+    }
 }

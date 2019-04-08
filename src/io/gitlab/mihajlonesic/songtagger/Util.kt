@@ -92,5 +92,18 @@ class Util {
                 (color.blue * 255).roundToInt()
             )
         }
+
+        /**
+         * Split text on '/' and return the first part
+         * Eg. Hip-Hop/Rap --> Hip-Hop
+         * @param text Text
+         * @return First part
+         */
+        fun firstToSlash(text: String): String {
+            val array = text.split('/')
+            if(array.isEmpty()) return text
+            if(array.size == 1) return array[0]
+            return array[0]
+        }
     }
 }

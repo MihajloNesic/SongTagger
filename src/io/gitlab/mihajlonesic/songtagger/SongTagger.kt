@@ -23,15 +23,16 @@ class SongTagger: Application() {
     private fun startApp(stage: Stage) {
         val fxmlLoader = FXMLLoader(javaClass.getResource("/SongTagger.fxml"))
         fxmlLoader.setController(controller)
+
         val root = fxmlLoader.load<Any>() as Parent
 
-        // TODO: Add app icon
+        // TODO: Change app icon
         val applicationIcon = Image(javaClass.getResourceAsStream("/icon.png"))
 
         controller.init()
 
         stage.apply {
-            title = "SongTagger alpha 2.1"
+            title = "SongTagger beta 3.0"
             scene = Scene(root)
             isResizable = false
             icons.add(applicationIcon)
