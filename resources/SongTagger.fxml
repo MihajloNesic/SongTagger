@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.*?>
 <?import java.lang.*?>
 <?import javafx.scene.image.*?>
 <?import javafx.scene.text.*?>
@@ -7,9 +8,14 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox fx:id="root" alignment="CENTER_LEFT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="589.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+<VBox fx:id="root" alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="648.0" prefWidth="400.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
    <children>
-      <HBox fx:id="hbs4" alignment="CENTER" prefHeight="100.0" prefWidth="200.0" spacing="5.0">
+      <Label fx:id="infoLabel" alignment="CENTER" contentDisplay="CENTER" maxWidth="383.0" minWidth="383.0" prefHeight="19.0" prefWidth="383.0" text="Info" textFill="#000000a9">
+         <cursor>
+            <Cursor fx:constant="HAND" />
+         </cursor>
+      </Label>
+      <HBox fx:id="hbs4" alignment="CENTER" prefHeight="43.0" prefWidth="380.0" spacing="5.0">
          <children>
             <Label fx:id="lblColor" minWidth="-Infinity" prefWidth="85.0" text="Color Scheme">
                <font>
@@ -22,7 +28,7 @@
             <Insets bottom="5.0" top="5.0" />
          </padding>
       </HBox>
-      <HBox fx:id="hbs1" alignment="CENTER" prefHeight="65.0" prefWidth="380.0" spacing="5.0">
+      <HBox fx:id="hbs1" alignment="CENTER" prefHeight="39.0" prefWidth="380.0" spacing="5.0">
          <children>
             <TextField fx:id="songPath" editable="false" prefHeight="22.0" prefWidth="350.0" promptText="Song path">
                <font>
@@ -47,7 +53,7 @@
             <Insets bottom="5.0" top="5.0" />
          </padding>
          <children>
-            <ImageView fx:id="songArtwork" fitHeight="200.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true" />
+            <ImageView fx:id="songArtwork" fitHeight="200.0" fitWidth="200.0" pickOnBounds="true" />
             <HBox fx:id="hbs2" alignment="CENTER" prefHeight="100.0" prefWidth="200.0" spacing="5.0">
                <padding>
                   <Insets bottom="5.0" top="5.0" />
@@ -144,9 +150,21 @@
             </VBox>
          </children>
       </HBox>
-      <VBox fx:id="vbs4" alignment="CENTER" prefHeight="65.0" prefWidth="380.0" spacing="5.0">
+      <VBox fx:id="vbs41" alignment="CENTER" layoutX="20.0" layoutY="557.0" prefHeight="42.0" prefWidth="380.0" spacing="5.0">
+         <children>
+            <Button fx:id="removeTags" disable="true" mnemonicParsing="false" prefHeight="22.0" prefWidth="400.0" text="Remove Tags">
+               <font>
+                  <Font size="13.0" />
+               </font>
+            </Button>
+         </children>
          <padding>
-            <Insets bottom="10.0" top="20.0" />
+            <Insets bottom="5.0" top="15.0" />
+         </padding>
+      </VBox>
+      <VBox fx:id="vbs4" alignment="CENTER" prefHeight="38.0" prefWidth="380.0" spacing="5.0">
+         <padding>
+            <Insets bottom="5.0" top="10.0" />
          </padding>
          <children>
             <Button fx:id="save" defaultButton="true" disable="true" mnemonicParsing="false" prefHeight="22.0" prefWidth="400.0" text="Save">

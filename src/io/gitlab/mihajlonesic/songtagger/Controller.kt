@@ -16,14 +16,22 @@ import javafx.scene.input.KeyEvent
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.audio.mp3.MP3File
 import org.jaudiotagger.tag.FieldKey
+import org.jaudiotagger.tag.id3.ID3v1Tag
 import org.jaudiotagger.tag.images.Artwork
 import org.jaudiotagger.tag.images.ArtworkFactory
 import java.awt.image.BufferedImage
+import javafx.scene.control.ButtonType
+import javafx.scene.control.Alert
+
+
 
 class Controller(private val stage: Stage) {
 
     // Controls from the form
+    @FXML lateinit var infoLabel: Label
+
     @FXML lateinit var songPath: TextField
     @FXML lateinit var selectSong: Button
 
@@ -38,6 +46,7 @@ class Controller(private val stage: Stage) {
     @FXML lateinit var yearField: TextField
     @FXML lateinit var comboGenres: ComboBox<String>
 
+    @FXML lateinit var removeTags: Button
     @FXML lateinit var save: Button
 
     @FXML lateinit var colorPicker: ColorPicker
@@ -193,9 +202,12 @@ class Controller(private val stage: Stage) {
     internal fun init() {
         song = Song()
 
+        infoLabel.setOnMouseClicked { handleInfoClicked() }
+
         selectSong.setOnAction { handleSelectSong() }
         changeArtwork.setOnAction { handleChangeArtwork() }
         downloadArtwork.setOnAction { handleArtworkDownload() }
+        removeTags.setOnAction { handleRemoveTags() }
         save.setOnAction { handleSave() }
 
         trackNumberField.addEventFilter(KeyEvent.ANY, numberInputHandler)
@@ -218,6 +230,21 @@ class Controller(private val stage: Stage) {
         comboGenres.items.addAll(genres)
 
         Platform.runLater{ selectSong.requestFocus() }
+    }
+
+    /**
+     * Show program info
+     */
+    private fun handleInfoClicked() {
+        Alert(Alert.AlertType.INFORMATION).apply {
+            headerText = "SongTagger by Mihajlo Nesic"
+            title = "SongTagger Info"
+            contentText = "A JavaFX app for tagging audio files. Built entirely in Kotlin."
+            width = 200.0
+            buttonTypes.clear()
+            buttonTypes.add(ButtonType.OK)
+            showAndWait()
+        }
     }
 
     /**
@@ -288,7 +315,7 @@ class Controller(private val stage: Stage) {
         song.trackNumber = tag.getFirst(FieldKey.TRACK)
         song.year = tag.getFirst(FieldKey.YEAR)
 
-        var genre = Util.firstToSlash(tag.getFirst(FieldKey.GENRE))
+        val genre = Util.firstToSlash(tag.getFirst(FieldKey.GENRE))
 
         if(genre.isNotEmpty()) {
             song.genre = genre
@@ -314,38 +341,138 @@ class Controller(private val stage: Stage) {
     }
 
     /**
+     * Removes all tag data from song file
+     */
+    private fun handleRemoveTags() {
+        val alert = Alert(Alert.AlertType.CONFIRMATION, "", ButtonType.YES, ButtonType.NO, ButtonType.CANCEL)
+        alert.headerText = null
+        alert.title = "Removing song tag data"
+        alert.contentText = "Are you sure you want to remove all tag data from the song?"
+
+        alert.showAndWait().ifPresent { type ->
+            when (type) {
+                ButtonType.YES -> {
+                    when {
+                        songFile.extension == "mp3" -> {
+                            val audioFile = AudioFileIO.read(songFile) as MP3File
+
+                            // ID3v1
+                            if(audioFile.hasID3v1Tag()) {
+                                println("Removing ID3v1...")
+                                audioFile.delete(audioFile.iD3v1Tag)
+                            }
+
+                            // ID3v2
+                            if(audioFile.hasID3v2Tag()) {
+                                println("Removing ID3v2...")
+                                audioFile.delete(audioFile.iD3v2Tag)
+                            }
+
+                            audioFile.commit()
+
+                            clearControls()
+                            controlFields(true)
+                            controlButtons(true)
+                            Util.alertConfirm("Tag data has been removed")
+                        }
+                        songFile.extension == "m4a" -> {
+                            // TODO: Implement tag removing for m4a files
+                            Util.alertInfo("Removing tag data from M4A files not supported yet :(")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Handles song saving
      */
     private fun handleSave() {
-        println("Saving...")
-        if(songFile.extension == "mp3") {
-            // TODO: Implement mp3 files
-            Util.alertError("MP3 files not supported yet :(")
+        print("Saving ")
+        when {
+            songFile.extension == "mp3" -> {
+                println("MP3...")
+
+                setSongFromFields()
+                println("New song data: $song")
+
+                val audioFile = AudioFileIO.read(songFile) as MP3File
+
+                // ID3v1
+                if(audioFile.hasID3v1Tag()) {
+                    println("Removing ID3v1...")
+                    audioFile.delete(audioFile.iD3v1Tag)
+                }
+
+                val id3v1Tag = ID3v1Tag()
+
+                id3v1Tag.setField(FieldKey.ALBUM, song.album)
+                id3v1Tag.setField(FieldKey.TITLE, song.title)
+                id3v1Tag.setField(FieldKey.ARTIST, song.artist)
+                id3v1Tag.setField(FieldKey.TRACK, song.trackNumber)
+                id3v1Tag.setField(FieldKey.YEAR, song.year)
+                id3v1Tag.setField(FieldKey.GENRE, song.genre)
+                id3v1Tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
+
+                audioFile.iD3v1Tag = id3v1Tag
+                println("Setting ID3v1")
+
+                // ID3v2
+                if(audioFile.hasID3v2Tag()) {
+                    println("Removing ID3v2...")
+                    audioFile.delete(audioFile.iD3v2Tag)
+                }
+
+                val id3v2Tag = audioFile.tagOrCreateDefault
+
+                id3v2Tag.setField(FieldKey.ALBUM, song.album)
+                id3v2Tag.setField(FieldKey.TITLE, song.title)
+                id3v2Tag.setField(FieldKey.ARTIST, song.artist)
+                id3v2Tag.setField(FieldKey.TRACK, song.trackNumber)
+                id3v2Tag.setField(FieldKey.YEAR, song.year)
+                id3v2Tag.setField(FieldKey.GENRE, song.genre)
+                id3v2Tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
+
+                id3v2Tag.deleteArtworkField()
+                id3v2Tag.setField(songArtArtwork)
+
+                audioFile.tag = id3v2Tag
+                println("Setting ID3v1")
+
+                println("Committing...")
+                audioFile.commit()
+
+                println("Saved!")
+                Util.alertConfirm("Song successfully saved!")
+            }
+            songFile.extension == "m4a" -> {
+                println("M4A...")
+
+                val audioFile = AudioFileIO.read(songFile)
+                val tag = audioFile.tag
+
+                setSongFromFields()
+                println("New song data: $song")
+
+                tag.setField(FieldKey.ALBUM, song.album)
+                tag.setField(FieldKey.TITLE, song.title)
+                tag.setField(FieldKey.ARTIST, song.artist)
+                tag.setField(FieldKey.TRACK, song.trackNumber)
+                tag.setField(FieldKey.YEAR, song.year)
+                tag.setField(FieldKey.GENRE, song.genre)
+                tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
+
+                tag.deleteArtworkField()
+                tag.setField(songArtArtwork)
+
+                audioFile.commit()
+
+                println("Saved!")
+                Util.alertConfirm("Song successfully saved!")
+            }
+            else -> Util.alertError("File extension not supported yet :(")
         }
-        else if(songFile.extension == "m4a") {
-            var audioFile = AudioFileIO.read(songFile)
-            var tag = audioFile.tag
-
-            setSongFromFields()
-            println("New song data: $song")
-
-            tag.setField(FieldKey.ALBUM, song.album)
-            tag.setField(FieldKey.TITLE, song.title)
-            tag.setField(FieldKey.ARTIST, song.artist)
-            tag.setField(FieldKey.TRACK, song.trackNumber)
-            tag.setField(FieldKey.YEAR, song.year)
-            tag.setField(FieldKey.GENRE, song.genre)
-
-            tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
-
-            tag.setField(songArtArtwork)
-
-            audioFile.commit()
-
-            Util.alertConfirm("Song successfully saved!")
-            println("Saved!")
-        }
-        else Util.alertError("File extension not supported yet :(")
     }
 
     /**
@@ -356,6 +483,7 @@ class Controller(private val stage: Stage) {
     private fun controlButtons(disable: Boolean) {
         changeArtwork.isDisable = disable
         downloadArtwork.isDisable = disable
+        removeTags.isDisable = disable
         save.isDisable = disable
     }
 
@@ -371,6 +499,21 @@ class Controller(private val stage: Stage) {
         trackNumberField.isDisable = disable
         yearField.isDisable = disable
         comboGenres.isDisable = disable
+    }
+
+    /**
+     * Clears all controls setting them to default states
+     */
+    private fun clearControls() {
+        songPath.clear()
+        albumField.clear()
+        titleField.clear()
+        artistField.clear()
+        trackNumberField.clear()
+        yearField.clear()
+        comboGenres.selectionModel.select(-1)
+        songArtwork.image = null
+        System.gc()
     }
 
     /**
