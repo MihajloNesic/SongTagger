@@ -25,8 +25,6 @@ import java.awt.image.BufferedImage
 import javafx.scene.control.ButtonType
 import javafx.scene.control.Alert
 
-
-
 class Controller(private val stage: Stage) {
 
     // Controls from the form
@@ -71,6 +69,9 @@ class Controller(private val stage: Stage) {
     private lateinit var songArtFile: File
     private lateinit var songArtArtwork: Artwork
 
+    private var hasArtwork = false
+
+    // TODO: Re-work genre list?
     // https://en.wikipedia.org/wiki/List_of_ID3v1_Genres
     private val genres = FXCollections.observableArrayList(
         "None",
@@ -238,7 +239,7 @@ class Controller(private val stage: Stage) {
     private fun handleInfoClicked() {
         Alert(Alert.AlertType.INFORMATION).apply {
             headerText = "SongTagger by Mihajlo Nesic"
-            title = "SongTagger Info"
+            title = "SongTagger"
             contentText = "A JavaFX app for tagging audio files. Built entirely in Kotlin."
             width = 200.0
             buttonTypes.clear()
@@ -256,6 +257,7 @@ class Controller(private val stage: Stage) {
             songFile = file
             println("\nSelected song path: ${songFile.absolutePath}")
             songPath.text = songFile.absolutePath
+            clearControls(false)
             readTags()
             controlButtons(false)
             controlFields(false)
@@ -275,16 +277,11 @@ class Controller(private val stage: Stage) {
     }
 
     /**
-     * This method currently downloads an image from the ImageView control
-     *
-     * Inevitably, when the song info and artwork is fetched, this method should
-     * extract the artwork from the song file.
-     *
-     * TODO: Download artwork from file, not ImageView
+     * Downloads a song artwork image from the song tag
      */
     private fun handleArtworkDownload() {
-        val image = songArtwork.image
-        if(image != null) {
+        if(hasArtwork) {
+            val image = SwingFXUtils.toFXImage(songArtArtwork.image as BufferedImage?, null)
             val file = songSaveArtworkChooser.showSaveDialog(stage)
             if (file != null) {
                 Util.saveImageToFile(image, file)
@@ -315,7 +312,7 @@ class Controller(private val stage: Stage) {
         song.trackNumber = tag.getFirst(FieldKey.TRACK)
         song.year = tag.getFirst(FieldKey.YEAR)
 
-        val genre = Util.firstToSlash(tag.getFirst(FieldKey.GENRE))
+        val genre = tag.getFirst(FieldKey.GENRE)
 
         if(genre.isNotEmpty()) {
             song.genre = genre
@@ -327,6 +324,10 @@ class Controller(private val stage: Stage) {
             val artworkImage = SwingFXUtils.toFXImage(artwork.image as BufferedImage?, null)
             songArtwork.image = artworkImage
             songArtArtwork = artwork
+            hasArtwork = true
+        } else {
+            hasArtwork = false
+            println("No artwork data")
         }
 
         setFieldsFromSong(song)
@@ -370,7 +371,7 @@ class Controller(private val stage: Stage) {
 
                             audioFile.commit()
 
-                            clearControls()
+                            clearControls(true)
                             controlFields(true)
                             controlButtons(true)
                             Util.alertConfirm("Tag data has been removed")
@@ -407,12 +408,13 @@ class Controller(private val stage: Stage) {
 
                 val id3v1Tag = ID3v1Tag()
 
-                id3v1Tag.setField(FieldKey.ALBUM, song.album)
-                id3v1Tag.setField(FieldKey.TITLE, song.title)
-                id3v1Tag.setField(FieldKey.ARTIST, song.artist)
-                id3v1Tag.setField(FieldKey.TRACK, song.trackNumber)
-                id3v1Tag.setField(FieldKey.YEAR, song.year)
-                id3v1Tag.setField(FieldKey.GENRE, song.genre)
+                if(!song.album.isNullOrBlank()) id3v1Tag.setField(FieldKey.ALBUM, song.album)
+                if(!song.title.isNullOrBlank()) id3v1Tag.setField(FieldKey.TITLE, song.title)
+                if(!song.artist.isNullOrBlank()) id3v1Tag.setField(FieldKey.ARTIST, song.artist)
+                if(!song.trackNumber.isNullOrBlank()) id3v1Tag.setField(FieldKey.TRACK, song.trackNumber)
+                if(!song.year.isNullOrBlank()) id3v1Tag.setField(FieldKey.YEAR, song.year)
+                if(!song.genre.isNullOrBlank()) id3v1Tag.setField(FieldKey.GENRE, song.genre)
+
                 id3v1Tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
 
                 audioFile.iD3v1Tag = id3v1Tag
@@ -426,16 +428,19 @@ class Controller(private val stage: Stage) {
 
                 val id3v2Tag = audioFile.tagOrCreateDefault
 
-                id3v2Tag.setField(FieldKey.ALBUM, song.album)
-                id3v2Tag.setField(FieldKey.TITLE, song.title)
-                id3v2Tag.setField(FieldKey.ARTIST, song.artist)
-                id3v2Tag.setField(FieldKey.TRACK, song.trackNumber)
-                id3v2Tag.setField(FieldKey.YEAR, song.year)
-                id3v2Tag.setField(FieldKey.GENRE, song.genre)
+                if(!song.album.isNullOrBlank()) id3v2Tag.setField(FieldKey.ALBUM, song.album)
+                if(!song.title.isNullOrBlank()) id3v2Tag.setField(FieldKey.TITLE, song.title)
+                if(!song.artist.isNullOrBlank()) id3v2Tag.setField(FieldKey.ARTIST, song.artist)
+                if(!song.trackNumber.isNullOrBlank()) id3v2Tag.setField(FieldKey.TRACK, song.trackNumber)
+                if(!song.year.isNullOrBlank()) id3v2Tag.setField(FieldKey.YEAR, song.year)
+                if(!song.genre.isNullOrBlank()) id3v2Tag.setField(FieldKey.GENRE, song.genre)
+
                 id3v2Tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
 
-                id3v2Tag.deleteArtworkField()
-                id3v2Tag.setField(songArtArtwork)
+                if(hasArtwork) {
+                    id3v2Tag.deleteArtworkField()
+                    id3v2Tag.setField(songArtArtwork)
+                }
 
                 audioFile.tag = id3v2Tag
                 println("Setting ID3v1")
@@ -455,16 +460,19 @@ class Controller(private val stage: Stage) {
                 setSongFromFields()
                 println("New song data: $song")
 
-                tag.setField(FieldKey.ALBUM, song.album)
-                tag.setField(FieldKey.TITLE, song.title)
-                tag.setField(FieldKey.ARTIST, song.artist)
-                tag.setField(FieldKey.TRACK, song.trackNumber)
-                tag.setField(FieldKey.YEAR, song.year)
-                tag.setField(FieldKey.GENRE, song.genre)
+                if(!song.album.isNullOrBlank()) tag.setField(FieldKey.ALBUM, song.album)
+                if(!song.title.isNullOrBlank()) tag.setField(FieldKey.TITLE, song.title)
+                if(!song.artist.isNullOrBlank()) tag.setField(FieldKey.ARTIST, song.artist)
+                if(!song.trackNumber.isNullOrBlank()) tag.setField(FieldKey.TRACK, song.trackNumber)
+                if(!song.year.isNullOrBlank()) tag.setField(FieldKey.YEAR, song.year)
+                if(!song.genre.isNullOrBlank()) tag.setField(FieldKey.GENRE, song.genre)
+
                 tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
 
-                tag.deleteArtworkField()
-                tag.setField(songArtArtwork)
+                if(hasArtwork) {
+                    tag.deleteArtworkField()
+                    tag.setField(songArtArtwork)
+                }
 
                 audioFile.commit()
 
@@ -503,9 +511,11 @@ class Controller(private val stage: Stage) {
 
     /**
      * Clears all controls setting them to default states
+     *
+     * @param clearSongPath Should this method clear 'songPath' field
      */
-    private fun clearControls() {
-        songPath.clear()
+    private fun clearControls(clearSongPath: Boolean) {
+        if(clearSongPath) songPath.clear()
         albumField.clear()
         titleField.clear()
         artistField.clear()
@@ -525,6 +535,7 @@ class Controller(private val stage: Stage) {
         val image = Image(file.toURI().toString(), 800.0, 800.0, false, true)
         songArtwork.image = image
         songArtArtwork = ArtworkFactory.createArtworkFromFile(file)
+        hasArtwork = true
     }
 
     /**
