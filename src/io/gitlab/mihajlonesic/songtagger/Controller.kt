@@ -33,7 +33,9 @@ class Controller(private val stage: Stage) {
 
     // Program parameters
     private val DEV = false
-    private val VERSION = "1.0"
+    private val VERSION = "1.1"
+
+    private val programIcon = Image(SongTagger::class.java.getResourceAsStream("/icon.png"))
 
     // Controls from the form
     @FXML lateinit var infoLabel: Label
@@ -44,6 +46,7 @@ class Controller(private val stage: Stage) {
     @FXML lateinit var songArtwork: ImageView
     @FXML lateinit var changeArtwork: Button
     @FXML lateinit var downloadArtwork: Button
+    @FXML lateinit var removeArtwork: Button
 
     @FXML lateinit var albumField: TextField
     @FXML lateinit var titleField: TextField
@@ -216,6 +219,7 @@ class Controller(private val stage: Stage) {
         selectSong.setOnAction { handleSelectSong() }
         changeArtwork.setOnAction { handleChangeArtwork() }
         downloadArtwork.setOnAction { handleArtworkDownload() }
+        removeArtwork.setOnAction { handleRemoveArtwork() }
         removeTags.setOnAction { handleRemoveTags() }
         save.setOnAction { handleSave() }
 
@@ -246,23 +250,31 @@ class Controller(private val stage: Stage) {
      */
     private fun handleInfoClicked() {
         Alert(Alert.AlertType.INFORMATION).apply {
+            val iconImageView = ImageView(programIcon)
+            iconImageView.fitWidth = 64.0
+            iconImageView.fitHeight = 64.0
+            graphic = iconImageView
             headerText = "SongTagger by Mihajlo Nesic"
             title = "SongTagger"
             contentText = "Version $VERSION\n\nA JavaFX app for tagging audio files. Built entirely in Kotlin.\n\n"
             width = 200.0
             buttonTypes.clear()
 
-            val buttonGitLab = ButtonType("GitLab project", ButtonBar.ButtonData.LEFT)
+            val window = this.dialogPane.scene.window as Stage
+            window.icons.add(programIcon)
 
-            buttonTypes.addAll(buttonGitLab, ButtonType.CLOSE)
+            val buttonWebsite = ButtonType("Website", ButtonBar.ButtonData.LEFT)
+
+            buttonTypes.addAll(buttonWebsite, ButtonType.CLOSE)
 
             val result = showAndWait()
 
-            if (result.get() == buttonGitLab) {
+            if (result.get() == buttonWebsite) {
                 try {
-                    Desktop.getDesktop().browse(URI("https://gitlab.com/MihajloNesic/songtagger"))
+                    Desktop.getDesktop().browse(URI("https://mihajlonesic.gitlab.io/projects/songtagger/"))
                 } catch (ex: Exception) {}
             }
+
         }
     }
 
@@ -309,6 +321,45 @@ class Controller(private val stage: Stage) {
     }
 
     /**
+     * Removes the song artwork tag
+     */
+    private fun handleRemoveArtwork() {
+        if(hasArtwork) {
+            val alert = Alert(Alert.AlertType.CONFIRMATION, "", ButtonType.YES, ButtonType.NO, ButtonType.CANCEL)
+            alert.headerText = null
+            alert.title = "Removing song artwork"
+            alert.contentText = "Are you sure you want to remove artwork from the song?"
+            val window = alert.dialogPane.scene.window as Stage
+            window.icons.add(programIcon)
+
+            alert.showAndWait().ifPresent { type ->
+                when (type) {
+                    ButtonType.YES -> {
+                        devLog("Removing artwork...")
+                        try {
+                            val audioFile = AudioFileIO.read(songFile)
+                            val tag = audioFile.tag
+
+                            tag.deleteArtworkField()
+                            audioFile.commit()
+
+                            devLog("Artwork removed.")
+
+                            clearControls(true)
+                            controlFields(true)
+                            controlButtons(true)
+                            Util.alertConfirm("Artwork removed")
+                        }
+                        catch (ex: Exception) {
+                            Util.alertError("An error has occurred. Try again.")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Handles GUI color changing
      */
     private fun handleColorChanged() {
@@ -334,7 +385,6 @@ class Controller(private val stage: Stage) {
 
         if(genre.isNotEmpty()) {
             song.genre = genre
-            devLog("Song genre: $genre")
         }
 
         if(!tag.artworkList.isNullOrEmpty()) {
@@ -365,6 +415,7 @@ class Controller(private val stage: Stage) {
             devLog("Song was tagged with SongTagger! :)")
             save.text = "Save :)"
         }
+        else save.text = "Save"
     }
 
     /**
@@ -375,6 +426,8 @@ class Controller(private val stage: Stage) {
         alert.headerText = null
         alert.title = "Removing song tag data"
         alert.contentText = "Are you sure you want to remove all tag data from the song?"
+        val window = alert.dialogPane.scene.window as Stage
+        window.icons.add(programIcon)
 
         alert.showAndWait().ifPresent { type ->
             when (type) {
@@ -517,6 +570,7 @@ class Controller(private val stage: Stage) {
     private fun controlButtons(disable: Boolean) {
         changeArtwork.isDisable = disable
         downloadArtwork.isDisable = disable
+        removeArtwork.isDisable = disable
         removeTags.isDisable = disable
         save.isDisable = disable
     }

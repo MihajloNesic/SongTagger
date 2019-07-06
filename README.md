@@ -1,8 +1,8 @@
-# SongTagger [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+# SongTagger [![Kotlin](https://i.imgur.com/5bfhhC9.png)](https://kotlinlang.org/) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-SongTagger is an application for tagging audio files
+[SongTagger](https://mihajlonesic.gitlab.io/projects/songtagger/) is an application for tagging audio files.
 
-![application window image](https://i.imgur.com/jAboR2E.png)
+![application window image](https://i.imgur.com/uWHBuwv.png)
 
 The program can:
 * Read song data
@@ -13,4 +13,4 @@ The program can:
 * Download song artwork image
 * Change program color scheme
 
-![application in action](https://i.imgur.com/Xd2oBYH.png)
+![application in action](https://i.imgur.com/ZHGB3Cx.png)

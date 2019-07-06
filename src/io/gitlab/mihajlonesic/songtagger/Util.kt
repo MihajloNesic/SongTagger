@@ -5,6 +5,7 @@ import javafx.scene.control.Alert
 import javafx.scene.control.ButtonType
 import javafx.scene.image.Image
 import javafx.scene.paint.Color
+import javafx.stage.Stage
 import java.io.File
 import java.io.IOException
 import javax.imageio.ImageIO
@@ -23,6 +24,7 @@ class Util {
          * @param message Message
          */
         private fun alert(type: Alert.AlertType, alertTitle: String, message: String) {
+            val iconImage = Image(SongTagger::class.java.getResourceAsStream("/icon.png"))
             Alert(type).apply {
                 headerText = null
                 title = alertTitle
@@ -30,6 +32,8 @@ class Util {
                 width = 220.0
                 buttonTypes.clear()
                 buttonTypes.add(ButtonType.OK)
+                val window = dialogPane.scene.window as Stage
+                window.icons.add(iconImage)
                 showAndWait()
             }
         }
@@ -52,16 +56,6 @@ class Util {
          */
         fun alertConfirm(message: String) {
             alert(Alert.AlertType.CONFIRMATION, "Confirmation", message)
-        }
-
-        /**
-         * Shows `INFORMATION` message
-         *
-         * @param message Message
-         * @see alert
-         */
-        fun alertInfo(message: String) {
-            alert(Alert.AlertType.INFORMATION, "Information", message)
         }
 
         /**

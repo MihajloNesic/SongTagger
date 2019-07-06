@@ -69,6 +69,11 @@
                         <Font size="13.0" />
                      </font>
                   </Button>
+                  <Button fx:id="removeArtwork" disable="true" minWidth="75.0" mnemonicParsing="false" prefHeight="22.0" text="Remove image">
+                     <font>
+                        <Font size="13.0" />
+                     </font>
+                  </Button>
                </children>
             </HBox>
          </children>

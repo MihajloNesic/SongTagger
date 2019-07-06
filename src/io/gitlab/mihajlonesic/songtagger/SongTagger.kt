@@ -26,7 +26,6 @@ class SongTagger: Application() {
 
         val root = fxmlLoader.load<Any>() as Parent
 
-        // TODO: Change app icon
         val applicationIcon = Image(javaClass.getResourceAsStream("/icon.png"))
 
         controller.init()
