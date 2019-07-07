@@ -28,7 +28,7 @@ Note that it is in beta phase so there may be unexpected behavior.
 
 ### Beta 4.0 (9 Apr 2019)
 
-Core functionality:
+* Core functionality
 * Reading song data
 * Modifying song data
 * Removing song data
