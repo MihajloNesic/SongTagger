@@ -33,7 +33,7 @@ class Controller(private val stage: Stage) {
 
     // Program parameters
     private val DEV = false
-    private val VERSION = "2.0"
+    private val VERSION = "1.1"
 
     private val programIcon = Image(SongTagger::class.java.getResourceAsStream("/icon.png"))
 
@@ -285,7 +285,7 @@ class Controller(private val stage: Stage) {
         val file = songFileChooser.showOpenDialog(stage)
         if(file != null) {
             songFile = file
-            devLog("Selected song path: ${songFile.absolutePath}")
+            devLog("\nSelected song path: ${songFile.absolutePath}")
             songPath.text = songFile.absolutePath
             clearControls(false)
             readTags()
