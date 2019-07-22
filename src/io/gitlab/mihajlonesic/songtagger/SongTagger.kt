@@ -42,5 +42,12 @@ class SongTagger: Application() {
 }
 
 fun main(args: Array<String>) {
+    print(  "  ____                   _____                           \n" +
+            " / ___|  ___  _ __   __ |_   _|_ _  __ _  __ _  ___ _ __ \n" +
+            " \\___ \\ / _ \\| '_ \\ / _` || |/ _` |/ _` |/ _` |/ _ \\ '__|\n" +
+            "  ___) | (_) | | | | (_| || | (_| | (_| | (_| |  __/ |   \n" +
+            " |____/ \\___/|_| |_|\\__, ||_|\\__,_|\\__, |\\__, |\\___|_|   \n" +
+            " by Mihajlo Nesic   |___/          |___/ |___/           \n" +
+            "\n")
     Application.launch(SongTagger::class.java, *args)
 }
