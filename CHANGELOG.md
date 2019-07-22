@@ -1,3 +1,8 @@
+## 2.0 (22 Jul 2019)
+* Changed to a Maven project
+
+---
+
 ## 1.1 (6 Jun 2019)
 
 * Ability to remove song artwork 
