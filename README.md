@@ -14,3 +14,11 @@ The program can:
 * Change program color scheme
 
 ![application in action](https://i.imgur.com/ZHGB3Cx.png)
+
+## Debugging
+
+To see the debug log, run the application with
+
+    $ java -jar SongTagger.jar
+    
+![](https://i.imgur.com/7IGkEsb.png) 

@@ -1,3 +1,10 @@
+## 2.1 (17 Sep 2019)
+* Improved debugging log
+* Suppressing warnings
+* Code refactoring
+
+---
+
 ## 2.0 (22 Jul 2019)
 * Changed to a Maven project
 

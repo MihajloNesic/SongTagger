@@ -1,39 +1,39 @@
 package io.gitlab.mihajlonesic.songtagger
 
-import javafx.fxml.FXML
-import javafx.scene.image.Image
-import javafx.scene.image.ImageView
-import javafx.stage.FileChooser
-import javafx.stage.Stage
-import java.io.File
 import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.embed.swing.SwingFXUtils
 import javafx.event.EventHandler
+import javafx.fxml.FXML
 import javafx.scene.control.*
-import javafx.stage.DirectoryChooser
+import javafx.scene.control.ButtonType
+import javafx.scene.image.Image
+import javafx.scene.image.ImageView
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
+import javafx.stage.DirectoryChooser
+import javafx.stage.FileChooser
+import javafx.stage.Stage
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.audio.mp3.MP3File
 import org.jaudiotagger.tag.FieldKey
+import org.jaudiotagger.tag.Tag
 import org.jaudiotagger.tag.id3.ID3v1Tag
 import org.jaudiotagger.tag.images.Artwork
 import org.jaudiotagger.tag.images.ArtworkFactory
-import java.awt.image.BufferedImage
-import javafx.scene.control.ButtonType
-import javafx.scene.control.Alert
 import java.awt.Desktop
-import java.lang.NullPointerException
+import java.awt.image.BufferedImage
+import java.io.File
 import java.net.URI
-import java.text.SimpleDateFormat
+import java.util.logging.ConsoleHandler
+import java.util.logging.Logger
 
 class Controller(private val stage: Stage) {
 
     // Program parameters
-    private val DEV = false
-    private val VERSION = "2.0"
+    private val version = "2.1"
+    private val logger = Logger.getLogger(Controller::class.java.name)
 
     private val programIcon = Image(SongTagger::class.java.getResourceAsStream("/icon.png"))
 
@@ -212,6 +212,11 @@ class Controller(private val stage: Stage) {
      * Initialize form actions and other controls
      */
     internal fun init() {
+        logger.useParentHandlers = false
+        val consoleHandler = ConsoleHandler()
+        consoleHandler.formatter = LogFormatter()
+        logger.addHandler(consoleHandler)
+
         song = Song()
 
         infoLabel.setOnMouseClicked { handleInfoClicked() }
@@ -243,6 +248,8 @@ class Controller(private val stage: Stage) {
         comboGenres.items.addAll(genres)
 
         Platform.runLater{ selectSong.requestFocus() }
+
+        logger.info("SongTagger $version initialized and started")
     }
 
     /**
@@ -256,7 +263,7 @@ class Controller(private val stage: Stage) {
             graphic = iconImageView
             headerText = "SongTagger by Mihajlo Nesic"
             title = "SongTagger"
-            contentText = "Version $VERSION\n\nA JavaFX app for tagging audio files. Built entirely in Kotlin.\n\n"
+            contentText = "Version $version\n\nA JavaFX app for tagging audio files. Built entirely in Kotlin.\n\n"
             width = 200.0
             buttonTypes.clear()
 
@@ -285,7 +292,7 @@ class Controller(private val stage: Stage) {
         val file = songFileChooser.showOpenDialog(stage)
         if(file != null) {
             songFile = file
-            devLog("Selected song path: ${songFile.absolutePath}")
+            logger.info("Selected song path: ${songFile.absolutePath}")
             songPath.text = songFile.absolutePath
             clearControls(false)
             readTags()
@@ -301,7 +308,7 @@ class Controller(private val stage: Stage) {
         val file = songArtworkChooser.showOpenDialog(stage)
         if(file != null) {
             songArtFile = file
-            devLog("Artwork image path: ${songArtFile.absolutePath}")
+            logger.info("Artwork image path: ${songArtFile.absolutePath}")
             setSongImageView(songArtFile)
         }
     }
@@ -335,7 +342,7 @@ class Controller(private val stage: Stage) {
             alert.showAndWait().ifPresent { type ->
                 when (type) {
                     ButtonType.YES -> {
-                        devLog("Removing artwork...")
+                        logger.info("Removing artwork...")
                         try {
                             val audioFile = AudioFileIO.read(songFile)
                             val tag = audioFile.tag
@@ -343,7 +350,7 @@ class Controller(private val stage: Stage) {
                             tag.deleteArtworkField()
                             audioFile.commit()
 
-                            devLog("Artwork removed.")
+                            logger.info("Artwork removed.")
 
                             clearControls(true)
                             controlFields(true)
@@ -398,21 +405,21 @@ class Controller(private val stage: Stage) {
                 }
                 catch(ex: NullPointerException) {
                     hasArtwork = false
-                    devLog("No artwork data")
+                    logger.warning("No artwork data")
                 }
             }
         } else {
             hasArtwork = false
-            devLog("No artwork data")
+            logger.warning("No artwork data")
         }
 
         setFieldsFromSong(song)
-        devLog("Song data: $song")
+        logger.info("Song data: $song")
 
         // Little easter egg :)
         val comment = tag.getFirst(FieldKey.COMMENT)
         if(comment == "SongTagger by MihajloNesic") {
-            devLog("Song was tagged with SongTagger! :)")
+            logger.info("Song was tagged with SongTagger! :)")
             save.text = "Save :)"
         }
         else save.text = "Save"
@@ -434,25 +441,30 @@ class Controller(private val stage: Stage) {
                 ButtonType.YES -> {
                     when {
                         songFile.extension == "mp3" -> {
+                            logger.info("Removing MP3 file tag data...")
+
                             val audioFile = AudioFileIO.read(songFile) as MP3File
 
                             // ID3v1
                             if(audioFile.hasID3v1Tag()) {
-                                devLog("Removing ID3v1...")
+                                logger.info("Removing ID3v1...")
                                 audioFile.delete(audioFile.iD3v1Tag)
                             }
 
                             // ID3v2
                             if(audioFile.hasID3v2Tag()) {
-                                devLog("Removing ID3v2...")
+                                logger.info("Removing ID3v2...")
                                 audioFile.delete(audioFile.iD3v2Tag)
                             }
 
+                            logger.info("Committing...")
                             audioFile.commit()
 
                             clearControls(true)
                             controlFields(true)
                             controlButtons(true)
+
+                            logger.info("Song tags removed.")
                             Util.alertConfirm("Tag data has been removed")
                         }
                         songFile.extension == "m4a" -> {
@@ -469,97 +481,93 @@ class Controller(private val stage: Stage) {
      * Handles song saving
      */
     private fun handleSave() {
-        devLog("Saving ")
+        logger.info("Saving ")
         when {
             songFile.extension == "mp3" -> {
-                devLog("MP3...")
+                logger.info("MP3...")
 
                 setSongFromFields()
-                devLog("New song data: $song")
+                logger.info("New song data: $song")
 
                 val audioFile = AudioFileIO.read(songFile) as MP3File
 
                 // ID3v1
                 if(audioFile.hasID3v1Tag()) {
-                    devLog("Removing ID3v1...")
+                    logger.info("Removing ID3v1...")
                     audioFile.delete(audioFile.iD3v1Tag)
                 }
 
                 val id3v1Tag = ID3v1Tag()
 
-                if(!song.album.isNullOrBlank()) id3v1Tag.setField(FieldKey.ALBUM, song.album)
-                if(!song.title.isNullOrBlank()) id3v1Tag.setField(FieldKey.TITLE, song.title)
-                if(!song.artist.isNullOrBlank()) id3v1Tag.setField(FieldKey.ARTIST, song.artist)
-                if(!song.trackNumber.isNullOrBlank()) id3v1Tag.setField(FieldKey.TRACK, song.trackNumber)
-                if(!song.year.isNullOrBlank()) id3v1Tag.setField(FieldKey.YEAR, song.year)
-                if(!song.genre.isNullOrBlank()) id3v1Tag.setField(FieldKey.GENRE, song.genre)
+                setTagFieldsFromSong(id3v1Tag, song)
 
-                id3v1Tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
-
+                logger.info("Setting ID3v1")
                 audioFile.iD3v1Tag = id3v1Tag
-                devLog("Setting ID3v1")
 
                 // ID3v2
                 if(audioFile.hasID3v2Tag()) {
-                    devLog("Removing ID3v2...")
+                    logger.info("Removing ID3v2...")
                     audioFile.delete(audioFile.iD3v2Tag)
                 }
 
                 val id3v2Tag = audioFile.tagOrCreateDefault
 
-                if(!song.album.isNullOrBlank()) id3v2Tag.setField(FieldKey.ALBUM, song.album)
-                if(!song.title.isNullOrBlank()) id3v2Tag.setField(FieldKey.TITLE, song.title)
-                if(!song.artist.isNullOrBlank()) id3v2Tag.setField(FieldKey.ARTIST, song.artist)
-                if(!song.trackNumber.isNullOrBlank()) id3v2Tag.setField(FieldKey.TRACK, song.trackNumber)
-                if(!song.year.isNullOrBlank()) id3v2Tag.setField(FieldKey.YEAR, song.year)
-                if(!song.genre.isNullOrBlank()) id3v2Tag.setField(FieldKey.GENRE, song.genre)
-
-                id3v2Tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
+                setTagFieldsFromSong(id3v2Tag, song)
 
                 if(hasArtwork) {
                     id3v2Tag.deleteArtworkField()
                     id3v2Tag.setField(songArtArtwork)
                 }
 
+                logger.info("Setting ID3v2")
                 audioFile.tag = id3v2Tag
-                devLog("Setting ID3v1")
 
-                devLog("Committing...")
+                logger.info("Committing...")
                 audioFile.commit()
 
-                devLog("Saved!")
+                logger.info("Saved!")
                 Util.alertConfirm("Song successfully saved!")
             }
             songFile.extension == "m4a" -> {
-                devLog("M4A...")
+                logger.info("M4A...")
 
                 val audioFile = AudioFileIO.read(songFile)
                 val tag = audioFile.tag
 
                 setSongFromFields()
-                devLog("New song data: $song")
+                logger.info("New song data: $song")
 
-                if(!song.album.isNullOrBlank()) tag.setField(FieldKey.ALBUM, song.album)
-                if(!song.title.isNullOrBlank()) tag.setField(FieldKey.TITLE, song.title)
-                if(!song.artist.isNullOrBlank()) tag.setField(FieldKey.ARTIST, song.artist)
-                if(!song.trackNumber.isNullOrBlank()) tag.setField(FieldKey.TRACK, song.trackNumber)
-                if(!song.year.isNullOrBlank()) tag.setField(FieldKey.YEAR, song.year)
-                if(!song.genre.isNullOrBlank()) tag.setField(FieldKey.GENRE, song.genre)
-
-                tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
+                setTagFieldsFromSong(tag, song)
 
                 if(hasArtwork) {
                     tag.deleteArtworkField()
                     tag.setField(songArtArtwork)
                 }
 
+                logger.info("Committing...")
                 audioFile.commit()
 
-                devLog("Saved!")
+                logger.info("Saved!")
                 Util.alertConfirm("Song successfully saved!")
             }
             else -> Util.alertError("File extension not supported yet :(")
         }
+    }
+
+    /**
+     * Sets tag fields from song
+     *
+     * @param tag Tag
+     * @param song Song
+     */
+    private fun setTagFieldsFromSong(tag: Tag, song: Song) {
+        if(!song.album.isBlank()) tag.setField(FieldKey.ALBUM, song.album)
+        if(!song.title.isBlank()) tag.setField(FieldKey.TITLE, song.title)
+        if(!song.artist.isBlank()) tag.setField(FieldKey.ARTIST, song.artist)
+        if(!song.trackNumber.isBlank()) tag.setField(FieldKey.TRACK, song.trackNumber)
+        if(!song.year.isBlank()) tag.setField(FieldKey.YEAR, song.year)
+        if(!song.genre.isBlank()) tag.setField(FieldKey.GENRE, song.genre)
+        tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
     }
 
     /**
@@ -620,6 +628,8 @@ class Controller(private val stage: Stage) {
 
     /**
      * Sets fields based on song information
+     *
+     * @param song a song to read info from
      */
     private fun setFieldsFromSong(song: Song) {
         albumField.text = song.album
@@ -643,19 +653,5 @@ class Controller(private val stage: Stage) {
         song.trackNumber = trackNumberField.text
         song.year = yearField.text
         song.genre = genreName
-    }
-
-    /**
-     * Developer option for debugging
-     * If the DEV variable is true, the software will output a log
-     *
-     * @param message Message to print to the standard output stream
-     */
-    private fun devLog(message: String) {
-        if(DEV) {
-            val timeFormat = SimpleDateFormat("dd-MMM-yyyy HH:mm:ss.SSS")
-            val time = timeFormat.format(System.currentTimeMillis())
-            println("[$time] $message")
-        }
     }
 }
