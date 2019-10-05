@@ -1,4 +1,4 @@
-## 2.1 (17 Sep 2019)
+## 2.1 (5 Oct 2019)
 * Improved debugging log
 * Suppressing warnings
 * Code refactoring
