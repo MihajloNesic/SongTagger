@@ -1,3 +1,10 @@
+## 2.2 (8 Mar 2020)
+* Property file
+* Genre list sorted
+* Genre bug fix
+
+---
+
 ## 2.1 (5 Oct 2019)
 * Improved debugging log
 * Suppressing warnings
