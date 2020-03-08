@@ -5,7 +5,7 @@
 
     <groupId>io.gitlab.mihajlonesic</groupId>
     <artifactId>SongTagger</artifactId>
-    <version>2.0</version>
+    <version>2.2</version>
     <packaging>jar</packaging>
 
     <name>SongTagger</name>

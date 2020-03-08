@@ -25,14 +25,18 @@ import org.jaudiotagger.tag.images.ArtworkFactory
 import java.awt.Desktop
 import java.awt.image.BufferedImage
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.IOException
 import java.net.URI
+import java.util.*
 import java.util.logging.ConsoleHandler
 import java.util.logging.Logger
 
 class Controller(private val stage: Stage) {
 
     // Program parameters
-    private val version = "2.1"
+    private val version = "2.2"
     private val logger = Logger.getLogger(Controller::class.java.name)
 
     private val programIcon = Image(SongTagger::class.java.getResourceAsStream("/icon.png"))
@@ -80,113 +84,105 @@ class Controller(private val stage: Stage) {
     private lateinit var songArtFile: File
     private lateinit var songArtArtwork: Artwork
 
+    // Properties
+    private val configFilePath = File("songtagger.properties").path
+    private var propColor: Color? = null
+
     private var hasArtwork = false
 
-    // TODO: Re-work genre list?
     // https://en.wikipedia.org/wiki/List_of_ID3v1_Genres
     private val genres = FXCollections.observableArrayList(
         "None",
-        "Blues",
-        "Classic Rock",
-        "Country",
-        "Dance",
-        "Disco",
-        "Funk",
-        "Grunge",
-        "Hip-Hop",
-        "Jazz",
-        "Metal",
-        "New Age",
-        "Oldies",
         "Other",
-        "Pop",
-        "Rhythm and Blues",
-        "Rap",
-        "Reggae",
-        "Rock",
-        "Techno",
-        "Industrial",
-        "Alternative",
-        "Ska",
-        "Death Metal",
-        "Pranks",
-        "Soundtrack",
-        "Euro-Techno",
-        "Ambient",
-        "Trip-Hop",
-        "Vocal",
-        "Jazz & Funk",
-        "Fusion",
-        "Trance",
-        "Classical",
-        "Instrumental",
         "Acid",
-        "House",
-        "Game",
-        "Sound clip",
-        "Gospel",
-        "Noise",
+        "Acid Jazz",
+        "Acid Punk",
+        "Alternative",
         "Alternative Rock",
+        "Ambient",
         "Bass",
-        "Soul",
-        "Punk",
-        "Space",
-        "Meditative",
+        "Blues",
+        "Cabaret",
+        "Christian Rap",
+        "Classical",
+        "Classic Rock",
+        "Comedy",
+        "Country",
+        "Cult",
+        "Dance",
+        "Darkwave",
+        "Death Metal",
+        "Disco",
+        "Dream",
+        "Electronic",
+        "Ethnic",
+        "Euro-Techno",
+        "Eurodance",
+        "Funk",
+        "Fusion",
+        "Game",
+        "Gangsta",
+        "Gospel",
+        "Gothic",
+        "Grunge",
+        "Hard Rock",
+        "Hip-Hop",
+        "House",
+        "Industrial",
+        "Instrumental",
         "Instrumental Pop",
         "Instrumental Rock",
-        "Ethnic",
-        "Gothic",
-        "Darkwave",
-        "Techno-Industrial",
-        "Electronic",
-        "Pop-Folk",
-        "Eurodance",
-        "Dream",
-        "Southern Rock",
-        "Comedy",
-        "Cult",
-        "Gangsta",
-        "Top 40",
-        "Christian Rap",
-        "Pop/Funk",
+        "Jazz",
+        "Jazz & Funk",
         "Jungle music",
-        "Native US",
-        "Cabaret",
-        "New Wave",
-        "Psychedelic",
-        "Rave",
-        "Showtunes",
-        "Trailer",
         "Lo-Fi",
-        "Tribal",
-        "Acid Punk",
-        "Acid Jazz",
-        "Polka",
-        "Retro",
+        "Meditative",
+        "Metal",
         "Musical",
+        "Native US",
+        "New Age",
+        "New Wave",
+        "Noise",
+        "Oldies",
+        "Polka",
+        "Pop",
+        "Pop-Folk",
+        "Pop/Funk",
+        "Pranks",
+        "Psychedelic",
+        "Punk",
+        "Rap",
+        "Rave",
+        "Reggae",
+        "Retro",
+        "Rhythm and Blues",
+        "Rock",
         "Rock ’n’ Roll",
-        "Hard Rock"
+        "Showtunes",
+        "Ska",
+        "Soul",
+        "Sound clip",
+        "Soundtrack",
+        "Southern Rock",
+        "Space",
+        "Techno",
+        "Techno-Industrial",
+        "Top 40",
+        "Trailer",
+        "Trance",
+        "Tribal",
+        "Trip-Hop",
+        "Vocal"
     )
 
     /**
-     * Gets genre ID based on selected genre
-     * ID is based on ID3v1 genre
-     * https://en.wikipedia.org/wiki/List_of_ID3v1_Genres
-     */
-    private val genreID
-        get() = when(comboGenres.selectionModel.selectedIndex) {
-            -1 -> -1
-            0 -> -1
-            else -> comboGenres.selectionModel.selectedIndex - 1
-        }
-
-    /**
-     * Gets genre name based on ID3v1 genre id
+     * Gets genre name based on genre combo selection
      */
     private val genreName
-        get() = when(genreID) {
+        get() = when(comboGenres.selectionModel.selectedIndex) {
             -1 -> ""
-            else -> comboGenres.items[genreID+1]
+            0 -> ""
+            else -> comboGenres.items[comboGenres.selectionModel.selectedIndex]
         }
 
     /**
@@ -217,7 +213,11 @@ class Controller(private val stage: Stage) {
         consoleHandler.formatter = LogFormatter()
         logger.addHandler(consoleHandler)
 
+        logger.info("SongTagger $version starting...")
+
         song = Song()
+
+        loadPropertyFile()
 
         infoLabel.setOnMouseClicked { handleInfoClicked() }
 
@@ -242,14 +242,69 @@ class Controller(private val stage: Stage) {
 
         songSaveChooser.title = "Save to"
 
-        colorPicker.value = Color.valueOf("#ececec")
-        colorPicker.setOnAction { handleColorChanged() }
+        colorPicker.value = if(propColor != null) propColor else Color.valueOf("#ececec")
+        colorPicker.setOnAction { handleColorChanged(colorPicker.value, true) }
+        handleColorChanged(colorPicker.value, false)
 
         comboGenres.items.addAll(genres)
 
         Platform.runLater{ selectSong.requestFocus() }
 
         logger.info("SongTagger $version initialized and started")
+    }
+
+    /**
+     * Loads a property file
+     */
+    private fun loadPropertyFile() {
+        try {
+            logger.info("Configuration file found at $configFilePath")
+
+            val input = FileInputStream(configFilePath)
+            val prop = Properties()
+            prop.load(input)
+
+            val color = prop.getProperty("color")
+            if(color != null) propColor = Color.valueOf(color)
+
+            input.close()
+
+            logger.info("Configuration file loaded")
+        } catch (ex: IOException) {
+            logger.warning("Could not load configuration file")
+        } catch (ex: IllegalArgumentException) {
+            logger.warning("Some values in configuration file were invalid")
+        } catch (ex: Exception) {
+            logger.warning("Could not find configuration file")
+        }
+    }
+
+    /**
+     * Saves a property to a configuration file
+     *
+     * @param propertyName Name of the property
+     * @param propertyValue Value of the property
+     */
+    private fun saveProperty(propertyName: String, propertyValue: String) {
+        val prop = Properties()
+        try {
+            val input = FileInputStream(configFilePath)
+            prop.load(input)
+            input.close()
+        } catch (ex: IOException) {
+            logger.warning("Configuration file not found and will be created")
+        }
+        try {
+            val output = FileOutputStream(configFilePath)
+            prop.setProperty(propertyName, propertyValue)
+            prop.store(output, null)
+            output.close()
+            logger.info("Property '$propertyName' saved to '$propertyValue' in a configuration file")
+        } catch (ex: IOException) {
+            logger.warning("Could not save property '$propertyName' to configuration file")
+        } catch (ex: Exception) {
+            logger.warning("Could not save to configuration file")
+        }
     }
 
     /**
@@ -368,11 +423,14 @@ class Controller(private val stage: Stage) {
 
     /**
      * Handles GUI color changing
+     *
+     * @param value Color that will be applied
      */
-    private fun handleColorChanged() {
-        val color = Util.toHEX(colorPicker.value)
-        val colorDefBtn = Util.toHEX(colorPicker.value.darker().darker())
+    private fun handleColorChanged(value: Color, shouldSave: Boolean) {
+        val color = Util.toHEX(value)
+        val colorDefBtn = Util.toHEX(value.darker().darker())
         root.style = "-fx-base: $color; -fx-default-button: $colorDefBtn;"
+        if(shouldSave) saveProperty("color", color)
     }
 
     /**
@@ -382,6 +440,7 @@ class Controller(private val stage: Stage) {
         val audioFile = AudioFileIO.read(songFile)
         val tag = audioFile.tagOrCreateAndSetDefault
 
+        song = Song()
         song.album = tag.getFirst(FieldKey.ALBUM)
         song.title = tag.getFirst(FieldKey.TITLE)
         song.artist = tag.getFirst(FieldKey.ARTIST)
