@@ -1,3 +1,9 @@
+## 2.3 (26 Apr 2020)
+* Migrated to Java 11
+* Fixed broken Maven dependencies
+
+---
+
 ## 2.1 (5 Oct 2019)
 * Improved debugging log
 * Suppressing warnings

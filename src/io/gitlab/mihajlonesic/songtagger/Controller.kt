@@ -36,7 +36,7 @@ import java.util.logging.Logger
 class Controller(private val stage: Stage) {
 
     // Program parameters
-    private val version = "2.2"
+    private val version = "2.3"
     private val logger = Logger.getLogger(Controller::class.java.name)
 
     private val programIcon = Image(SongTagger::class.java.getResourceAsStream("/icon.png"))
