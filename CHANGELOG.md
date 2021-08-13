@@ -1,3 +1,12 @@
+## 2.4 (13 Aug 2021)
+* 'Album mode' added
+* 'Clear fields' button added
+* 'Last visited directory' property
+* Quality improvements
+* Fixed broken Maven dependencies
+
+---
+
 ## 2.3 (26 Apr 2020)
 * Migrated to Java 11
 * Fixed broken Maven dependencies

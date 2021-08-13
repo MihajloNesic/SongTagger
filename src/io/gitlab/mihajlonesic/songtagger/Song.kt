@@ -4,7 +4,16 @@ class Song(var album: String, var title: String, var artist: String, var trackNu
     constructor() : this("", "", "", "", "", "")
 
     override fun toString(): String {
-        return "Song(album='$album', title='$title', artist='$artist', trackNumber='$trackNumber', year='$year', genre='$genre')"
+        return """
+            {
+                "title": "$title",
+                "artist": "$artist",
+                "album": "$album",
+                "trackNumber": $trackNumber,
+                "year": "$year",
+                "genre": "$genre"
+            }
+        """.trimIndent()
     }
 
 }

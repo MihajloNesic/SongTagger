@@ -5,7 +5,9 @@ import java.util.Date
 import java.util.logging.Formatter
 import java.util.logging.LogRecord
 
-class LogFormatter: Formatter() {
+class LogFormatter constructor(): Formatter() {
+
+    private var color = false
 
     private val ansiReset = "\u001B[0m"
     private val ansiBlack = "\u001B[30m"
@@ -17,32 +19,38 @@ class LogFormatter: Formatter() {
     private val ansiCyan = "\u001B[36m"
     private val ansiWhite = "\u001B[37m"
 
+    constructor(color: Boolean) : this() {
+        this.color = color
+    }
+
     override fun format(record: LogRecord): String {
         val builder = StringBuilder()
 
-        builder.append(ansiYellow)
+        if (this.color) builder.append(ansiYellow)
         builder.append("[")
         builder.append(calculateDate(record.millis))
         builder.append("]")
 
-        builder.append(ansiCyan)
+        if (this.color) builder.append(ansiCyan)
         builder.append(" [")
         builder.append(record.sourceClassName)
         builder.append("#")
         builder.append(record.sourceMethodName)
         builder.append("]")
 
-        when {
-            record.level.name == "INFO" -> builder.append(ansiGreen)
-            record.level.name == "WARNING" -> builder.append(ansiRed)
-            else -> builder.append(ansiPurple)
+        if (this.color) {
+            when (record.level.name) {
+                "INFO" -> builder.append(ansiGreen)
+                "WARNING" -> builder.append(ansiRed)
+                else -> builder.append(ansiPurple)
+            }
         }
 
         builder.append(" [")
         builder.append(record.level.name)
         builder.append("]")
 
-        builder.append(ansiWhite)
+        if (this.color) builder.append(ansiWhite)
         builder.append(" - ")
         builder.append(record.message)
 
@@ -57,7 +65,7 @@ class LogFormatter: Formatter() {
             }
         }
 
-        builder.append(ansiReset)
+        if (this.color) builder.append(ansiReset)
         builder.append("\n")
 
         return builder.toString()

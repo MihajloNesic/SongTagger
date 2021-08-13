@@ -6,10 +6,11 @@ import javafx.embed.swing.SwingFXUtils
 import javafx.event.EventHandler
 import javafx.fxml.FXML
 import javafx.scene.control.*
-import javafx.scene.control.ButtonType
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.input.KeyEvent
+import javafx.scene.input.MouseButton
+import javafx.scene.input.MouseEvent
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.stage.DirectoryChooser
@@ -33,10 +34,12 @@ import java.util.*
 import java.util.logging.ConsoleHandler
 import java.util.logging.Logger
 
+
 class Controller(private val stage: Stage) {
 
     // Program parameters
-    private val version = "2.3"
+    private val version = "2.4"
+    private val buildDate = "13 Aug 2021"
     private val logger = Logger.getLogger(Controller::class.java.name)
 
     private val programIcon = Image(SongTagger::class.java.getResourceAsStream("/icon.png"))
@@ -58,6 +61,9 @@ class Controller(private val stage: Stage) {
     @FXML lateinit var trackNumberField: TextField
     @FXML lateinit var yearField: TextField
     @FXML lateinit var comboGenres: ComboBox<String>
+
+    @FXML lateinit var preserveValues: CheckBox
+    @FXML lateinit var clearFields: Button
 
     @FXML lateinit var removeTags: Button
     @FXML lateinit var save: Button
@@ -83,10 +89,12 @@ class Controller(private val stage: Stage) {
     private lateinit var songFile: File
     private lateinit var songArtFile: File
     private lateinit var songArtArtwork: Artwork
+    private var albumMode: Boolean = false
 
     // Properties
-    private val configFilePath = File("songtagger.properties").path
+    private val propFilePath = File("songtagger.properties").path
     private var propColor: Color? = null
+    private var lastVisitedDirectory: String = System.getProperty("user.home")
 
     private var hasArtwork = false
 
@@ -210,7 +218,7 @@ class Controller(private val stage: Stage) {
     internal fun init() {
         logger.useParentHandlers = false
         val consoleHandler = ConsoleHandler()
-        consoleHandler.formatter = LogFormatter()
+        consoleHandler.formatter = LogFormatter(true)
         logger.addHandler(consoleHandler)
 
         logger.info("SongTagger $version starting...")
@@ -219,7 +227,7 @@ class Controller(private val stage: Stage) {
 
         loadPropertyFile()
 
-        infoLabel.setOnMouseClicked { handleInfoClicked() }
+        infoLabel.setOnMouseClicked { event -> handleInfoClicked(event) }
 
         selectSong.setOnAction { handleSelectSong() }
         changeArtwork.setOnAction { handleChangeArtwork() }
@@ -227,6 +235,9 @@ class Controller(private val stage: Stage) {
         removeArtwork.setOnAction { handleRemoveArtwork() }
         removeTags.setOnAction { handleRemoveTags() }
         save.setOnAction { handleSave() }
+
+        preserveValues.setOnAction { handlePreserveValuesChange() }
+        clearFields.setOnAction { handleClearFields() }
 
         trackNumberField.addEventFilter(KeyEvent.ANY, numberInputHandler)
         yearField.addEventFilter(KeyEvent.ANY, numberInputHandler)
@@ -242,7 +253,7 @@ class Controller(private val stage: Stage) {
 
         songSaveChooser.title = "Save to"
 
-        colorPicker.value = if(propColor != null) propColor else Color.valueOf("#ececec")
+        colorPicker.value = if (propColor != null) propColor else Color.valueOf("#ececec")
         colorPicker.setOnAction { handleColorChanged(colorPicker.value, true) }
         handleColorChanged(colorPicker.value, false)
 
@@ -258,24 +269,32 @@ class Controller(private val stage: Stage) {
      */
     private fun loadPropertyFile() {
         try {
-            logger.info("Configuration file found at $configFilePath")
+            logger.info("Property file found at $propFilePath")
 
-            val input = FileInputStream(configFilePath)
+            val input = FileInputStream(propFilePath)
             val prop = Properties()
             prop.load(input)
 
-            val color = prop.getProperty("color")
-            if(color != null) propColor = Color.valueOf(color)
+            for (k in prop.keys) {
+                val key = k as String
+                val value = prop.getProperty(key)
+                logger.info("Property '$key' found with value '${prop.getProperty(key)}'")
+
+                when (key) {
+                    "color" -> propColor = Color.valueOf(value)
+                    "lvd" -> lastVisitedDirectory = value
+                }
+            }
 
             input.close()
 
-            logger.info("Configuration file loaded")
+            logger.info("Property file loaded")
         } catch (ex: IOException) {
-            logger.warning("Could not load configuration file")
+            logger.warning("Could not load property file")
         } catch (ex: IllegalArgumentException) {
-            logger.warning("Some values in configuration file were invalid")
+            logger.warning("Some values in property file were invalid")
         } catch (ex: Exception) {
-            logger.warning("Could not find configuration file")
+            logger.warning("Could not find property file")
         }
     }
 
@@ -288,55 +307,68 @@ class Controller(private val stage: Stage) {
     private fun saveProperty(propertyName: String, propertyValue: String) {
         val prop = Properties()
         try {
-            val input = FileInputStream(configFilePath)
+            val input = FileInputStream(propFilePath)
             prop.load(input)
             input.close()
         } catch (ex: IOException) {
-            logger.warning("Configuration file not found and will be created")
+            logger.warning("Property file not found and will be created")
         }
         try {
-            val output = FileOutputStream(configFilePath)
+            val output = FileOutputStream(propFilePath)
             prop.setProperty(propertyName, propertyValue)
             prop.store(output, null)
             output.close()
-            logger.info("Property '$propertyName' saved to '$propertyValue' in a configuration file")
+            logger.info("Property '$propertyName' saved as '$propertyValue' in a file")
         } catch (ex: IOException) {
-            logger.warning("Could not save property '$propertyName' to configuration file")
+            logger.warning("Could not save property '$propertyName' to file")
+            Util.alertException("Could not save property '$propertyName' to file", ex)
         } catch (ex: Exception) {
-            logger.warning("Could not save to configuration file")
+            logger.warning("Could not save to property file")
+            Util.alertException("Could not save to property file", ex)
         }
     }
 
     /**
      * Show program info
      */
-    private fun handleInfoClicked() {
-        Alert(Alert.AlertType.INFORMATION).apply {
-            val iconImageView = ImageView(programIcon)
-            iconImageView.fitWidth = 64.0
-            iconImageView.fitHeight = 64.0
-            graphic = iconImageView
-            headerText = "SongTagger by Mihajlo Nesic"
-            title = "SongTagger"
-            contentText = "Version $version\n\nA JavaFX app for tagging audio files. Built entirely in Kotlin.\n\n"
-            width = 200.0
-            buttonTypes.clear()
+    private fun handleInfoClicked(event: MouseEvent) {
+        if (event.button.equals(MouseButton.SECONDARY)) {
+            // another easter egg :)
+            val randomColor = Color.valueOf(Util.randomColor())
+            colorPicker.value = randomColor
+            handleColorChanged(randomColor, false)
+        }
+        else {
+            Alert(Alert.AlertType.INFORMATION).apply {
+                val iconImageView = ImageView(programIcon)
+                iconImageView.fitWidth = 64.0
+                iconImageView.fitHeight = 64.0
+                graphic = iconImageView
+                headerText = "SongTagger by Mihajlo Nesic"
+                title = "SongTagger"
+                contentText =
+                    "Version $version\nBuild date $buildDate\n\nA JavaFX app for tagging audio files. Built entirely in Kotlin.\n\n"
+                width = 200.0
+                buttonTypes.clear()
 
-            val window = this.dialogPane.scene.window as Stage
-            window.icons.add(programIcon)
+                val window = this.dialogPane.scene.window as Stage
+                window.icons.add(programIcon)
 
-            val buttonWebsite = ButtonType("Website", ButtonBar.ButtonData.LEFT)
+                val buttonWebsite = ButtonType("Website", ButtonBar.ButtonData.LEFT)
 
-            buttonTypes.addAll(buttonWebsite, ButtonType.CLOSE)
+                buttonTypes.addAll(buttonWebsite, ButtonType.CLOSE)
 
-            val result = showAndWait()
+                val result = showAndWait()
 
-            if (result.get() == buttonWebsite) {
-                try {
-                    Desktop.getDesktop().browse(URI("https://mihajlonesic.gitlab.io/projects/songtagger/"))
-                } catch (ex: Exception) {}
+                if (result.get() == buttonWebsite) {
+                    try {
+                        Desktop.getDesktop().browse(URI("https://mihajlonesic.gitlab.io/projects/songtagger/"))
+                    } catch (ex: Exception) {
+                        logger.warning("Could not open link from info window")
+                    }
+                }
+
             }
-
         }
     }
 
@@ -344,15 +376,23 @@ class Controller(private val stage: Stage) {
      * Handles song selection
      */
     private fun handleSelectSong() {
+        songFileChooser.initialDirectory = File(lastVisitedDirectory)
         val file = songFileChooser.showOpenDialog(stage)
-        if(file != null) {
+        if (file != null) {
             songFile = file
             logger.info("Selected song path: ${songFile.absolutePath}")
             songPath.text = songFile.absolutePath
-            clearControls(false)
+
+            if (!albumMode) {
+                clearControls(false)
+            }
+
             readTags()
             controlButtons(false)
             controlFields(false)
+
+            lastVisitedDirectory = file.parent
+            saveProperty("lvd", file.parent)
         }
     }
 
@@ -360,8 +400,9 @@ class Controller(private val stage: Stage) {
      * Handles artwork changing
      */
     private fun handleChangeArtwork() {
+        songArtworkChooser.initialDirectory = File(lastVisitedDirectory)
         val file = songArtworkChooser.showOpenDialog(stage)
-        if(file != null) {
+        if (file != null) {
             songArtFile = file
             logger.info("Artwork image path: ${songArtFile.absolutePath}")
             setSongImageView(songArtFile)
@@ -372,12 +413,15 @@ class Controller(private val stage: Stage) {
      * Downloads a song artwork image from the song tag
      */
     private fun handleArtworkDownload() {
-        if(hasArtwork) {
+        if (hasArtwork) {
             val image = SwingFXUtils.toFXImage(songArtArtwork.image as BufferedImage?, null)
+            songSaveArtworkChooser.initialDirectory = File(lastVisitedDirectory)
+            val artworkName = if (song.title != "") song.title else songFile.nameWithoutExtension
+            songSaveArtworkChooser.initialFileName = artworkName
             val file = songSaveArtworkChooser.showSaveDialog(stage)
             if (file != null) {
                 Util.saveImageToFile(image, file)
-                Util.alertConfirm("Artwork saved to ${file.absolutePath}")
+                Util.alertOpen("Artwork saved to ${file.absolutePath}", file)
             }
         }
     }
@@ -386,11 +430,11 @@ class Controller(private val stage: Stage) {
      * Removes the song artwork tag
      */
     private fun handleRemoveArtwork() {
-        if(hasArtwork) {
+        if (hasArtwork) {
             val alert = Alert(Alert.AlertType.CONFIRMATION, "", ButtonType.YES, ButtonType.NO, ButtonType.CANCEL)
             alert.headerText = null
             alert.title = "Removing song artwork"
-            alert.contentText = "Are you sure you want to remove artwork from the song?"
+            alert.contentText = "Are you sure you want to remove artwork from the song? This action cannot be undone."
             val window = alert.dialogPane.scene.window as Stage
             window.icons.add(programIcon)
 
@@ -413,7 +457,7 @@ class Controller(private val stage: Stage) {
                             Util.alertConfirm("Artwork removed")
                         }
                         catch (ex: Exception) {
-                            Util.alertError("An error has occurred. Try again.")
+                            Util.alertException("An error has occurred. Try again.", ex)
                         }
                     }
                 }
@@ -430,7 +474,9 @@ class Controller(private val stage: Stage) {
         val color = Util.toHEX(value)
         val colorDefBtn = Util.toHEX(value.darker().darker())
         root.style = "-fx-base: $color; -fx-default-button: $colorDefBtn;"
-        if(shouldSave) saveProperty("color", color)
+        if (shouldSave) {
+            saveProperty("color", color)
+        }
     }
 
     /**
@@ -449,35 +495,38 @@ class Controller(private val stage: Stage) {
 
         val genre = tag.getFirst(FieldKey.GENRE)
 
-        if(genre.isNotEmpty()) {
+        if (genre.isNotEmpty()) {
             song.genre = genre
         }
 
-        if(!tag.artworkList.isNullOrEmpty()) {
-            val artwork = tag.firstArtwork
-            if(artwork != null) {
-                try {
-                    val artworkImage = SwingFXUtils.toFXImage(artwork.image as BufferedImage?, null)
-                    songArtwork.image = artworkImage
-                    songArtArtwork = artwork
-                    hasArtwork = true
+        if (!albumMode) {
+            if (!tag.artworkList.isNullOrEmpty()) {
+                val artwork = tag.firstArtwork
+                if (artwork != null) {
+                    try {
+                        val artworkImage = SwingFXUtils.toFXImage(artwork.image as BufferedImage?, null)
+                        songArtwork.image = artworkImage
+                        songArtArtwork = artwork
+                        hasArtwork = true
+                    }
+                    catch(ex: NullPointerException) {
+                        hasArtwork = false
+                        logger.warning("No artwork data")
+                    }
                 }
-                catch(ex: NullPointerException) {
-                    hasArtwork = false
-                    logger.warning("No artwork data")
-                }
+            } else {
+                hasArtwork = false
+                logger.warning("No artwork data")
             }
-        } else {
-            hasArtwork = false
-            logger.warning("No artwork data")
+
+            setFieldsFromSong(song)
         }
 
-        setFieldsFromSong(song)
-        logger.info("Song data: $song")
+        logger.info("Song data:\n$song")
 
         // Little easter egg :)
         val comment = tag.getFirst(FieldKey.COMMENT)
-        if(comment == "SongTagger by MihajloNesic") {
+        if (comment.equals("SongTagger by MihajloNesic")) {
             logger.info("Song was tagged with SongTagger! :)")
             save.text = "Save :)"
         }
@@ -498,20 +547,20 @@ class Controller(private val stage: Stage) {
         alert.showAndWait().ifPresent { type ->
             when (type) {
                 ButtonType.YES -> {
-                    when {
-                        songFile.extension == "mp3" -> {
+                    when (songFile.extension) {
+                        "mp3" -> {
                             logger.info("Removing MP3 file tag data...")
 
                             val audioFile = AudioFileIO.read(songFile) as MP3File
 
                             // ID3v1
-                            if(audioFile.hasID3v1Tag()) {
+                            if (audioFile.hasID3v1Tag()) {
                                 logger.info("Removing ID3v1...")
                                 audioFile.delete(audioFile.iD3v1Tag)
                             }
 
                             // ID3v2
-                            if(audioFile.hasID3v2Tag()) {
+                            if (audioFile.hasID3v2Tag()) {
                                 logger.info("Removing ID3v2...")
                                 audioFile.delete(audioFile.iD3v2Tag)
                             }
@@ -526,7 +575,7 @@ class Controller(private val stage: Stage) {
                             logger.info("Song tags removed.")
                             Util.alertConfirm("Tag data has been removed")
                         }
-                        songFile.extension == "m4a" -> {
+                        "m4a" -> {
                             // TODO: Implement tag removing for m4a files
                             Util.alertError("Removing tag data from M4A files is not supported yet :(")
                         }
@@ -541,17 +590,17 @@ class Controller(private val stage: Stage) {
      */
     private fun handleSave() {
         logger.info("Saving ")
-        when {
-            songFile.extension == "mp3" -> {
+        when (songFile.extension) {
+            "mp3" -> {
                 logger.info("MP3...")
 
                 setSongFromFields()
-                logger.info("New song data: $song")
+                logger.info("New song data:\n$song")
 
                 val audioFile = AudioFileIO.read(songFile) as MP3File
 
                 // ID3v1
-                if(audioFile.hasID3v1Tag()) {
+                if (audioFile.hasID3v1Tag()) {
                     logger.info("Removing ID3v1...")
                     audioFile.delete(audioFile.iD3v1Tag)
                 }
@@ -564,7 +613,7 @@ class Controller(private val stage: Stage) {
                 audioFile.iD3v1Tag = id3v1Tag
 
                 // ID3v2
-                if(audioFile.hasID3v2Tag()) {
+                if (audioFile.hasID3v2Tag()) {
                     logger.info("Removing ID3v2...")
                     audioFile.delete(audioFile.iD3v2Tag)
                 }
@@ -573,7 +622,7 @@ class Controller(private val stage: Stage) {
 
                 setTagFieldsFromSong(id3v2Tag, song)
 
-                if(hasArtwork) {
+                if (hasArtwork) {
                     id3v2Tag.deleteArtworkField()
                     id3v2Tag.setField(songArtArtwork)
                 }
@@ -582,35 +631,65 @@ class Controller(private val stage: Stage) {
                 audioFile.tag = id3v2Tag
 
                 logger.info("Committing...")
-                audioFile.commit()
+                try {
+                    audioFile.commit()
+                }
+                catch (e: Exception) {
+                    logger.warning("An error occurred while committing")
+                    Util.alertException("An error occurred while saving the file.", e)
+                    return
+                }
 
                 logger.info("Saved!")
-                Util.alertConfirm("Song successfully saved!")
+                Util.alertOpen("Song successfully saved!", songFile)
             }
-            songFile.extension == "m4a" -> {
+            "m4a" -> {
                 logger.info("M4A...")
 
                 val audioFile = AudioFileIO.read(songFile)
                 val tag = audioFile.tag
 
                 setSongFromFields()
-                logger.info("New song data: $song")
+                logger.info("New song data:\n$song")
 
                 setTagFieldsFromSong(tag, song)
 
-                if(hasArtwork) {
+                if (hasArtwork) {
                     tag.deleteArtworkField()
                     tag.setField(songArtArtwork)
                 }
 
                 logger.info("Committing...")
-                audioFile.commit()
+                try {
+                    audioFile.commit()
+                }
+                catch (e: Exception) {
+                    logger.warning("An error occurred while committing")
+                    Util.alertException("An error occurred while saving the file.", e)
+                    return
+                }
 
                 logger.info("Saved!")
-                Util.alertConfirm("Song successfully saved!")
+                Util.alertOpen("Song successfully saved!", songFile)
             }
             else -> Util.alertError("File extension not supported yet :(")
         }
+    }
+
+    /**
+     * Handles checkbox change for preserving song data values
+     */
+    private fun handlePreserveValuesChange() {
+        albumMode = preserveValues.isSelected
+    }
+
+    /**
+     * Handles clearing fields
+     */
+    private fun handleClearFields() {
+        clearControls(true)
+        controlFields(true)
+        controlButtons(true)
     }
 
     /**
@@ -620,12 +699,12 @@ class Controller(private val stage: Stage) {
      * @param song Song
      */
     private fun setTagFieldsFromSong(tag: Tag, song: Song) {
-        if(!song.album.isBlank()) tag.setField(FieldKey.ALBUM, song.album)
-        if(!song.title.isBlank()) tag.setField(FieldKey.TITLE, song.title)
-        if(!song.artist.isBlank()) tag.setField(FieldKey.ARTIST, song.artist)
-        if(!song.trackNumber.isBlank()) tag.setField(FieldKey.TRACK, song.trackNumber)
-        if(!song.year.isBlank()) tag.setField(FieldKey.YEAR, song.year)
-        if(!song.genre.isBlank()) tag.setField(FieldKey.GENRE, song.genre)
+        if (song.album.isNotBlank()) tag.setField(FieldKey.ALBUM, song.album)
+        if (song.title.isNotBlank()) tag.setField(FieldKey.TITLE, song.title)
+        if (song.artist.isNotBlank()) tag.setField(FieldKey.ARTIST, song.artist)
+        if (song.trackNumber.isNotBlank()) tag.setField(FieldKey.TRACK, song.trackNumber)
+        if (song.year.isNotBlank()) tag.setField(FieldKey.YEAR, song.year)
+        if (song.genre.isNotBlank()) tag.setField(FieldKey.GENRE, song.genre)
         tag.setField(FieldKey.COMMENT, "SongTagger by MihajloNesic")
     }
 
@@ -662,7 +741,9 @@ class Controller(private val stage: Stage) {
      * @param clearSongPath Should this method clear 'songPath' field
      */
     private fun clearControls(clearSongPath: Boolean) {
-        if(clearSongPath) songPath.clear()
+        if (clearSongPath) {
+            songPath.clear()
+        }
         albumField.clear()
         titleField.clear()
         artistField.clear()
@@ -697,7 +778,7 @@ class Controller(private val stage: Stage) {
         trackNumberField.text = song.trackNumber
         yearField.text = song.year
 
-        if(song.genre.isNotEmpty()) {
+        if (song.genre.isNotEmpty()) {
             comboGenres.selectionModel.select(song.genre)
         } else comboGenres.selectionModel.select(-1)
     }
